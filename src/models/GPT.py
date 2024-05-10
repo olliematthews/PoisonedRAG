@@ -1,15 +1,14 @@
 from openai import OpenAI
 from .Model import Model
+from pathlib import Path
 
+key = (Path.home() / Path("pers", "pr-key.txt")).read_text()
 
 class GPT(Model):
     def __init__(self, config):
         super().__init__(config)
-        api_keys = config["api_key_info"]["api_keys"]
-        api_pos = int(config["api_key_info"]["api_key_use"])
-        assert (0 <= api_pos < len(api_keys)), "Please enter a valid API key to use"
         self.max_output_tokens = int(config["params"]["max_output_tokens"])
-        self.client = OpenAI(api_key=api_keys[api_pos])
+        self.client = OpenAI(api_key=key)
 
     def query(self, msg):
         try:

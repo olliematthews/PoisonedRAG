@@ -1,0 +1,14 @@
+{
+    "model_info":{
+        "provider":"llama_quant",
+        "name":"TheBloke/Llama-2-7b-Chat-GGUF"
+    },
+    "params":{
+        "temperature":0.1,
+        "seed":100,
+        "gpus":[0],
+        "device":"cuda",
+        "max_output_tokens":150,
+        "gpu_layers": 20
+    }
+}

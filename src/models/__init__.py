@@ -2,6 +2,7 @@ from .PaLM2 import PaLM2
 from .Vicuna import Vicuna
 from .GPT import GPT
 from .Llama import Llama
+from .llama_quant import LlamaQuant
 import json
 
 def load_json(file_path):
@@ -24,6 +25,8 @@ def create_model(config_path):
         model = GPT(config)
     elif provider == 'llama':
         model = Llama(config)
+    elif provider == 'llama_quant':
+        model = LlamaQuant(config)
     else:
         raise ValueError(f"ERROR: Unknown provider {provider}")
     return model
