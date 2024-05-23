@@ -5,10 +5,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python Debugger: Main app",
+            "name": "Main app",
             "type": "debugpy",
             "request": "launch",
             "program": "main.py",
+            "console": "integratedTerminal",
+            "args": [
+                "--model_name", "gpt3.5"
+            ]
+        },
+        {
+            "name": "Analysis",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "results/query_results/main/analysis.py",
             "console": "integratedTerminal",
             "args": [
                 "--model_name", "gpt3.5"

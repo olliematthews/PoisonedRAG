@@ -6,13 +6,18 @@ import os
 
 class Options:
     def __init__(self):
-        self.parser = argparse.ArgumentParser(formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+        self.parser = argparse.ArgumentParser(
+            formatter_class=argparse.ArgumentDefaultsHelpFormatter
+        )
         self.initialize()
 
     def initialize(self):
         # basic parameters
         self.parser.add_argument(
-            "--output_dir", type=str, default="./checkpoint/my_experiments", help="models are saved here"
+            "--output_dir",
+            type=str,
+            default="./checkpoint/my_experiments",
+            help="models are saved here",
         )
         self.parser.add_argument(
             "--train_data",
@@ -27,18 +32,30 @@ class Options:
             help="Data used for evaluation during finetuning, this option is not used during contrastive pre-training.",
         )
         self.parser.add_argument(
-            "--eval_datasets", nargs="+", default=[], help="List of datasets used for evaluation, in BEIR format"
+            "--eval_datasets",
+            nargs="+",
+            default=[],
+            help="List of datasets used for evaluation, in BEIR format",
         )
         self.parser.add_argument(
-            "--eval_datasets_dir", type=str, default="./", help="Directory where eval datasets are stored"
+            "--eval_datasets_dir",
+            type=str,
+            default="./",
+            help="Directory where eval datasets are stored",
         )
-        self.parser.add_argument("--model_path", type=str, default="none", help="path for retraining")
+        self.parser.add_argument(
+            "--model_path", type=str, default="none", help="path for retraining"
+        )
         self.parser.add_argument("--continue_training", action="store_true")
         self.parser.add_argument("--num_workers", type=int, default=5)
 
         self.parser.add_argument("--chunk_length", type=int, default=256)
         self.parser.add_argument("--loading_mode", type=str, default="split")
-        self.parser.add_argument("--lower_case", action="store_true", help="perform evaluation after lowercasing")
+        self.parser.add_argument(
+            "--lower_case",
+            action="store_true",
+            help="perform evaluation after lowercasing",
+        )
         self.parser.add_argument(
             "--sampling_coefficient",
             type=float,
@@ -65,21 +82,45 @@ class Options:
         self.parser.add_argument("--ratio_min", type=float, default=0.1)
         self.parser.add_argument("--ratio_max", type=float, default=0.5)
         self.parser.add_argument("--score_function", type=str, default="dot")
-        self.parser.add_argument("--retriever_model_id", type=str, default="bert-base-uncased")
+        self.parser.add_argument(
+            "--retriever_model_id", type=str, default="bert-base-uncased"
+        )
         self.parser.add_argument("--pooling", type=str, default="average")
-        self.parser.add_argument("--random_init", action="store_true", help="init model with random weights")
+        self.parser.add_argument(
+            "--random_init", action="store_true", help="init model with random weights"
+        )
 
         # dataset parameters
-        self.parser.add_argument("--per_gpu_batch_size", default=64, type=int, help="Batch size per GPU for training.")
         self.parser.add_argument(
-            "--per_gpu_eval_batch_size", default=256, type=int, help="Batch size per GPU for evaluation."
+            "--per_gpu_batch_size",
+            default=64,
+            type=int,
+            help="Batch size per GPU for training.",
+        )
+        self.parser.add_argument(
+            "--per_gpu_eval_batch_size",
+            default=256,
+            type=int,
+            help="Batch size per GPU for evaluation.",
         )
         self.parser.add_argument("--total_steps", type=int, default=1000)
         self.parser.add_argument("--warmup_steps", type=int, default=-1)
 
-        self.parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
-        self.parser.add_argument("--main_port", type=int, default=10001, help="Master port (for multi-node SLURM jobs)")
-        self.parser.add_argument("--seed", type=int, default=0, help="random seed for initialization")
+        self.parser.add_argument(
+            "--local_rank",
+            type=int,
+            default=-1,
+            help="For distributed training: local_rank",
+        )
+        self.parser.add_argument(
+            "--main_port",
+            type=int,
+            default=10001,
+            help="Master port (for multi-node SLURM jobs)",
+        )
+        self.parser.add_argument(
+            "--seed", type=int, default=0, help="random seed for initialization"
+        )
         # training parameters
         self.parser.add_argument("--optim", type=str, default="adamw")
         self.parser.add_argument("--scheduler", type=str, default="linear")
@@ -90,15 +131,23 @@ class Options:
             default=0.0,
             help="minimum learning rate at the end of the optimization schedule as a ratio of the learning rate",
         )
-        self.parser.add_argument("--weight_decay", type=float, default=0.01, help="learning rate")
+        self.parser.add_argument(
+            "--weight_decay", type=float, default=0.01, help="learning rate"
+        )
         self.parser.add_argument("--beta1", type=float, default=0.9, help="beta1")
         self.parser.add_argument("--beta2", type=float, default=0.98, help="beta2")
         self.parser.add_argument("--eps", type=float, default=1e-6, help="eps")
         self.parser.add_argument(
-            "--log_freq", type=int, default=100, help="log train stats every <log_freq> steps during training"
+            "--log_freq",
+            type=int,
+            default=100,
+            help="log train stats every <log_freq> steps during training",
         )
         self.parser.add_argument(
-            "--eval_freq", type=int, default=500, help="evaluate model every <eval_freq> steps during training"
+            "--eval_freq",
+            type=int,
+            default=500,
+            help="evaluate model every <eval_freq> steps during training",
         )
         self.parser.add_argument("--save_freq", type=int, default=50000)
         self.parser.add_argument("--maxload", type=int, default=None)

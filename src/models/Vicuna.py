@@ -32,11 +32,11 @@ class Vicuna(Model):
 
     def __str_to_bool(self, s):
         if type(s) == str:
-            if s.lower() == 'true':
+            if s.lower() == "true":
                 return True
-            elif s.lower() == 'false':
+            elif s.lower() == "false":
                 return False
-        raise ValueError(f'{s} is not a valid boolean')
+        raise ValueError(f"{s} is not a valid boolean")
 
     def query(self, msg):
         try:
@@ -59,7 +59,9 @@ class Vicuna(Model):
             else:
                 output_ids = output_ids[0][len(input_ids[0]) :]
             outputs = self.tokenizer.decode(
-                output_ids, skip_special_tokens=True, spaces_between_special_tokens=False
+                output_ids,
+                skip_special_tokens=True,
+                spaces_between_special_tokens=False,
             )
             response = outputs
         except:

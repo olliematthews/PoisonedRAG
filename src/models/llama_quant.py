@@ -12,11 +12,11 @@ class LlamaQuant(Model):
         self.gpu_layers = config["params"]["gpu_layers"]
 
         self.model = AutoModelForCausalLM.from_pretrained(
-            "TheBloke/Llama-2-7b-Chat-GGUF", 
-            model_file="llama-2-7b-chat.Q5_K_M.gguf", 
-            model_type="llama", 
-            gpu_layers=self.gpu_layers)
+            "TheBloke/Llama-2-7b-Chat-GGUF",
+            model_file="llama-2-7b-chat.Q5_K_M.gguf",
+            model_type="llama",
+            gpu_layers=self.gpu_layers,
+        )
 
     def query(self, msg):
         return self.model(msg)
-    

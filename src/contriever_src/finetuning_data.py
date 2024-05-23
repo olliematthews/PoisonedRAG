@@ -40,11 +40,14 @@ class Dataset(torch.utils.data.Dataset):
             n_hard_negatives, n_random_negatives = self.sample_n_hard_negatives(example)
             negatives = []
             if n_random_negatives > 0:
-                random_negatives = random.sample(example["negative_ctxs"], n_random_negatives)
+                random_negatives = random.sample(
+                    example["negative_ctxs"], n_random_negatives
+                )
                 negatives += random_negatives
             if n_hard_negatives > 0:
                 hard_negatives = random.sample(
-                    example["hard_negative_ctxs"][self.negative_hard_min_idx :], n_hard_negatives
+                    example["hard_negative_ctxs"][self.negative_hard_min_idx :],
+                    n_hard_negatives,
                 )
                 negatives += hard_negatives
         else:
@@ -55,10 +58,19 @@ class Dataset(torch.utils.data.Dataset):
             else:
                 negatives = []
 
-        gold = gold["title"] + " " + gold["text"] if "title" in gold and len(gold["title"]) > 0 else gold["text"]
+        gold = (
+            gold["title"] + " " + gold["text"]
+            if "title" in gold and len(gold["title"]) > 0
+            else gold["text"]
+        )
 
         negatives = [
-            n["title"] + " " + n["text"] if ("title" in n and len(n["title"]) > 0) else n["text"] for n in negatives
+            (
+                n["title"] + " " + n["text"]
+                if ("title" in n and len(n["title"]) > 0)
+                else n["text"]
+            )
+            for n in negatives
         ]
 
         example = {
@@ -74,9 +86,13 @@ class Dataset(torch.utils.data.Dataset):
         for path in datapaths:
             path = str(path)
             if path.endswith(".jsonl"):
-                file_data, counter = self._load_data_jsonl(path, global_rank, world_size, counter, maxload)
+                file_data, counter = self._load_data_jsonl(
+                    path, global_rank, world_size, counter, maxload
+                )
             elif path.endswith(".json"):
-                file_data, counter = self._load_data_json(path, global_rank, world_size, counter, maxload)
+                file_data, counter = self._load_data_json(
+                    path, global_rank, world_size, counter, maxload
+                )
             self.data.extend(file_data)
             if maxload is not None and maxload > 0 and counter >= maxload:
                 break
@@ -112,8 +128,16 @@ class Dataset(torch.utils.data.Dataset):
     def sample_n_hard_negatives(self, ex):
 
         if "hard_negative_ctxs" in ex:
-            n_hard_negatives = sum([random.random() < self.negative_hard_ratio for _ in range(self.negative_ctxs)])
-            n_hard_negatives = min(n_hard_negatives, len(ex["hard_negative_ctxs"][self.negative_hard_min_idx :]))
+            n_hard_negatives = sum(
+                [
+                    random.random() < self.negative_hard_ratio
+                    for _ in range(self.negative_ctxs)
+                ]
+            )
+            n_hard_negatives = min(
+                n_hard_negatives,
+                len(ex["hard_negative_ctxs"][self.negative_hard_min_idx :]),
+            )
         else:
             n_hard_negatives = 0
         n_random_negatives = self.negative_ctxs - n_hard_negatives

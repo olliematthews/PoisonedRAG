@@ -1,14 +1,15 @@
-from openai import OpenAI
+from openai import AsyncOpenAI, OpenAI
 from .Model import Model
 from pathlib import Path
 
-key = (Path.home() / Path("pers", "pr-key.txt")).read_text()
 
 class GPT(Model):
     def __init__(self, config):
         super().__init__(config)
         self.max_output_tokens = int(config["params"]["max_output_tokens"])
-        self.client = OpenAI(api_key=key)
+        self.is_async = True
+        self.aclient = AsyncOpenAI()
+        self.client = OpenAI()
 
     def query(self, msg):
         try:
@@ -18,11 +19,30 @@ class GPT(Model):
                 max_tokens=self.max_output_tokens,
                 messages=[
                     {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": msg}
+                    {"role": "user", "content": msg},
                 ],
             )
             response = completion.choices[0].message.content
-           
+
+        except Exception as e:
+            print(e)
+            response = ""
+
+        return response
+
+    async def aquery(self, msg):
+        try:
+            completion = await self.aclient.chat.completions.create(
+                model=self.name,
+                temperature=self.temperature,
+                max_tokens=self.max_output_tokens,
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant."},
+                    {"role": "user", "content": msg},
+                ],
+            )
+            response = completion.choices[0].message.content
+
         except Exception as e:
             print(e)
             response = ""

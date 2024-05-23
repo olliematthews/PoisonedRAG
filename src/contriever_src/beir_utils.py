@@ -43,10 +43,14 @@ class DenseEncoderModel:
         self.lower_case = lower_case
         self.normalize_text = normalize_text
 
-    def encode_queries(self, queries: List[str], batch_size: int, **kwargs) -> np.ndarray:
+    def encode_queries(
+        self, queries: List[str], batch_size: int, **kwargs
+    ) -> np.ndarray:
 
         if dist.is_initialized():
-            idx = np.array_split(range(len(queries)), dist.get_world_size())[dist.get_rank()]
+            idx = np.array_split(range(len(queries)), dist.get_world_size())[
+                dist.get_rank()
+            ]
         else:
             idx = range(len(queries))
 
@@ -85,11 +89,16 @@ class DenseEncoderModel:
     def encode_corpus(self, corpus: List[Dict[str, str]], batch_size: int, **kwargs):
 
         if dist.is_initialized():
-            idx = np.array_split(range(len(corpus)), dist.get_world_size())[dist.get_rank()]
+            idx = np.array_split(range(len(corpus)), dist.get_world_size())[
+                dist.get_rank()
+            ]
         else:
             idx = range(len(corpus))
         corpus = [corpus[i] for i in idx]
-        corpus = [c["title"] + " " + c["text"] if len(c["title"]) > 0 else c["text"] for c in corpus]
+        corpus = [
+            c["title"] + " " + c["text"] if len(c["title"]) > 0 else c["text"]
+            for c in corpus
+        ]
         if self.normalize_text:
             corpus = [normalize_text.normalize(c) for c in corpus]
         if self.lower_case:
@@ -170,18 +179,26 @@ def evaluate_model(
     data_path = os.path.join(beir_dir, dataset)
 
     if not os.path.isdir(data_path) and is_main:
-        url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(dataset)
+        url = "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/{}.zip".format(
+            dataset
+        )
         data_path = beir.util.download_and_unzip(url, beir_dir)
     dist_utils.barrier()
 
     if not dataset == "cqadupstack":
-        corpus, queries, qrels = GenericDataLoader(data_folder=data_path).load(split=split)
+        corpus, queries, qrels = GenericDataLoader(data_folder=data_path).load(
+            split=split
+        )
         results = retriever.retrieve(corpus, queries)
         if is_main:
-            ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
+            ndcg, _map, recall, precision = retriever.evaluate(
+                qrels, results, retriever.k_values
+            )
             for metric in (ndcg, _map, recall, precision, "mrr", "recall_cap", "hole"):
                 if isinstance(metric, str):
-                    metric = retriever.evaluate_custom(qrels, results, retriever.k_values, metric=metric)
+                    metric = retriever.evaluate_custom(
+                        qrels, results, retriever.k_values, metric=metric
+                    )
                 for key, value in metric.items():
                     metrics[key].append(value)
             if save_results_path is not None:
@@ -189,13 +206,27 @@ def evaluate_model(
     elif dataset == "cqadupstack":  # compute macroaverage over datasets
         paths = glob.glob(data_path)
         for path in paths:
-            corpus, queries, qrels = GenericDataLoader(data_folder=data_folder).load(split=split)
+            corpus, queries, qrels = GenericDataLoader(data_folder=data_folder).load(
+                split=split
+            )
             results = retriever.retrieve(corpus, queries)
             if is_main:
-                ndcg, _map, recall, precision = retriever.evaluate(qrels, results, retriever.k_values)
-                for metric in (ndcg, _map, recall, precision, "mrr", "recall_cap", "hole"):
+                ndcg, _map, recall, precision = retriever.evaluate(
+                    qrels, results, retriever.k_values
+                )
+                for metric in (
+                    ndcg,
+                    _map,
+                    recall,
+                    precision,
+                    "mrr",
+                    "recall_cap",
+                    "hole",
+                ):
                     if isinstance(metric, str):
-                        metric = retriever.evaluate_custom(qrels, results, retriever.k_values, metric=metric)
+                        metric = retriever.evaluate_custom(
+                            qrels, results, retriever.k_values, metric=metric
+                        )
                     for key, value in metric.items():
                         metrics[key].append(value)
         for key, value in metrics.items():

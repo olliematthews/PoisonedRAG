@@ -21,7 +21,9 @@ class MoCo(nn.Module):
         self.label_smoothing = opt.label_smoothing
         self.norm_doc = opt.norm_doc
         self.norm_query = opt.norm_query
-        self.moco_train_mode_encoder_k = opt.moco_train_mode_encoder_k  # apply the encoder on keys in train mode
+        self.moco_train_mode_encoder_k = (
+            opt.moco_train_mode_encoder_k
+        )  # apply the encoder on keys in train mode
 
         retriever, tokenizer = self._load_retriever(
             opt.retriever_model_id, pooling=opt.pooling, random_init=opt.random_init
@@ -31,7 +33,9 @@ class MoCo(nn.Module):
         self.encoder_q = retriever
         self.encoder_k = copy.deepcopy(retriever)
 
-        for param_q, param_k in zip(self.encoder_q.parameters(), self.encoder_k.parameters()):
+        for param_q, param_k in zip(
+            self.encoder_q.parameters(), self.encoder_k.parameters()
+        ):
             param_k.data.copy_(param_q.data)
             param_k.requires_grad = False
 
@@ -75,8 +79,12 @@ class MoCo(nn.Module):
         """
         Update of the key encoder
         """
-        for param_q, param_k in zip(self.encoder_q.parameters(), self.encoder_k.parameters()):
-            param_k.data = param_k.data * self.momentum + param_q.data * (1.0 - self.momentum)
+        for param_q, param_k in zip(
+            self.encoder_q.parameters(), self.encoder_k.parameters()
+        ):
+            param_k.data = param_k.data * self.momentum + param_q.data * (
+                1.0 - self.momentum
+            )
 
     @torch.no_grad()
     def _dequeue_and_enqueue(self, keys):
@@ -86,7 +94,9 @@ class MoCo(nn.Module):
         batch_size = keys.shape[0]
 
         ptr = int(self.queue_ptr)
-        assert self.queue_size % batch_size == 0, f"{batch_size}, {self.queue_size}"  # for simplicity
+        assert (
+            self.queue_size % batch_size == 0
+        ), f"{batch_size}, {self.queue_size}"  # for simplicity
 
         # replace the keys at ptr (dequeue and enqueue)
         self.queue[:, ptr : ptr + batch_size] = keys.T
@@ -101,10 +111,21 @@ class MoCo(nn.Module):
         logits = torch.cat([l_pos, l_neg], dim=1)
         return logits
 
-    def forward(self, q_tokens, q_mask, k_tokens, k_mask, stats_prefix="", iter_stats={}, **kwargs):
+    def forward(
+        self,
+        q_tokens,
+        q_mask,
+        k_tokens,
+        k_mask,
+        stats_prefix="",
+        iter_stats={},
+        **kwargs,
+    ):
         bsz = q_tokens.size(0)
 
-        q = self.encoder_q(input_ids=q_tokens, attention_mask=q_mask, normalize=self.norm_query)
+        q = self.encoder_q(
+            input_ids=q_tokens, attention_mask=q_mask, normalize=self.norm_query
+        )
 
         # compute key features
         with torch.no_grad():  # no gradient to keys
@@ -113,14 +134,18 @@ class MoCo(nn.Module):
             if not self.encoder_k.training and not self.moco_train_mode_encoder_k:
                 self.encoder_k.eval()
 
-            k = self.encoder_k(input_ids=k_tokens, attention_mask=k_mask, normalize=self.norm_doc)
+            k = self.encoder_k(
+                input_ids=k_tokens, attention_mask=k_mask, normalize=self.norm_doc
+            )
 
         logits = self._compute_logits(q, k) / self.temperature
 
         # labels: positive key indicators
         labels = torch.zeros(bsz, dtype=torch.long).cuda()
 
-        loss = torch.nn.functional.cross_entropy(logits, labels, label_smoothing=self.label_smoothing)
+        loss = torch.nn.functional.cross_entropy(
+            logits, labels, label_smoothing=self.label_smoothing
+        )
 
         self._dequeue_and_enqueue(k)
 

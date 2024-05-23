@@ -21,7 +21,9 @@ def init_logger(args, stdout_only=False):
     stdout_handler = logging.StreamHandler(sys.stdout)
     handlers = [stdout_handler]
     if not stdout_only:
-        file_handler = logging.FileHandler(filename=os.path.join(args.output_dir, "run.log"))
+        file_handler = logging.FileHandler(
+            filename=os.path.join(args.output_dir, "run.log")
+        )
         handlers.append(file_handler)
     logging.basicConfig(
         datefmt="%m/%d/%Y %H:%M:%S",
@@ -93,7 +95,9 @@ class WarmupLinearScheduler(torch.optim.lr_scheduler.LambdaLR):
         self.warmup = warmup
         self.total = total
         self.ratio = ratio
-        super(WarmupLinearScheduler, self).__init__(optimizer, self.lr_lambda, last_epoch=last_epoch)
+        super(WarmupLinearScheduler, self).__init__(
+            optimizer, self.lr_lambda, last_epoch=last_epoch
+        )
 
     def lr_lambda(self, step):
         if step < self.warmup:
@@ -101,7 +105,10 @@ class WarmupLinearScheduler(torch.optim.lr_scheduler.LambdaLR):
 
         return max(
             0.0,
-            1.0 + (self.ratio - 1) * (step - self.warmup) / float(max(1.0, self.total - self.warmup)),
+            1.0
+            + (self.ratio - 1)
+            * (step - self.warmup)
+            / float(max(1.0, self.total - self.warmup)),
         )
 
 
@@ -110,7 +117,9 @@ class CosineScheduler(torch.optim.lr_scheduler.LambdaLR):
         self.warmup = warmup
         self.total = total
         self.ratio = ratio
-        super(CosineScheduler, self).__init__(optimizer, self.lr_lambda, last_epoch=last_epoch)
+        super(CosineScheduler, self).__init__(
+            optimizer, self.lr_lambda, last_epoch=last_epoch
+        )
 
     def lr_lambda(self, step):
         if step < self.warmup:
@@ -122,7 +131,11 @@ class CosineScheduler(torch.optim.lr_scheduler.LambdaLR):
 def set_optim(opt, model):
     if opt.optim == "adamw":
         optimizer = torch.optim.AdamW(
-            model.parameters(), lr=opt.lr, betas=(opt.beta1, opt.beta2), eps=opt.eps, weight_decay=opt.weight_decay
+            model.parameters(),
+            lr=opt.lr,
+            betas=(opt.beta1, opt.beta2),
+            eps=opt.eps,
+            weight_decay=opt.weight_decay,
         )
     else:
         raise NotImplementedError("optimizer class not implemented")
@@ -164,11 +177,16 @@ class WeightedAvgStats:
 
     @property
     def stats(self) -> Dict[str, float]:
-        return {x: self.raw_stats[x] / self.total_weights[x] for x in self.raw_stats.keys()}
+        return {
+            x: self.raw_stats[x] / self.total_weights[x] for x in self.raw_stats.keys()
+        }
 
     @property
     def tuple_stats(self) -> Dict[str, Tuple[float, float]]:
-        return {x: (self.raw_stats[x] / self.total_weights[x], self.total_weights[x]) for x in self.raw_stats.keys()}
+        return {
+            x: (self.raw_stats[x] / self.total_weights[x], self.total_weights[x])
+            for x in self.raw_stats.keys()
+        }
 
     def reset(self) -> None:
         self.raw_stats = defaultdict(float)

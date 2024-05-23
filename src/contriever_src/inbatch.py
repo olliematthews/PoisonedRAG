@@ -56,13 +56,26 @@ class InBatch(nn.Module):
     def get_encoder(self):
         return self.encoder
 
-    def forward(self, q_tokens, q_mask, k_tokens, k_mask, stats_prefix="", iter_stats={}, **kwargs):
+    def forward(
+        self,
+        q_tokens,
+        q_mask,
+        k_tokens,
+        k_mask,
+        stats_prefix="",
+        iter_stats={},
+        **kwargs,
+    ):
 
         bsz = len(q_tokens)
         labels = torch.arange(0, bsz, dtype=torch.long, device=q_tokens.device)
 
-        qemb = self.encoder(input_ids=q_tokens, attention_mask=q_mask, normalize=self.norm_query)
-        kemb = self.encoder(input_ids=k_tokens, attention_mask=k_mask, normalize=self.norm_doc)
+        qemb = self.encoder(
+            input_ids=q_tokens, attention_mask=q_mask, normalize=self.norm_query
+        )
+        kemb = self.encoder(
+            input_ids=k_tokens, attention_mask=k_mask, normalize=self.norm_doc
+        )
 
         gather_fn = dist_utils.gather
 
@@ -72,7 +85,9 @@ class InBatch(nn.Module):
 
         scores = torch.einsum("id, jd->ij", qemb / self.opt.temperature, gather_kemb)
 
-        loss = torch.nn.functional.cross_entropy(scores, labels, label_smoothing=self.label_smoothing)
+        loss = torch.nn.functional.cross_entropy(
+            scores, labels, label_smoothing=self.label_smoothing
+        )
 
         # log stats
         if len(stats_prefix) > 0:
