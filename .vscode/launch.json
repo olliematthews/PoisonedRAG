@@ -11,14 +11,14 @@
             "program": "main.py",
             "console": "integratedTerminal",
             "args": [
-                "--model_name", "gpt3.5"
+                "--model_name", "gpt4"
             ]
         },
         {
             "name": "Analysis",
             "type": "debugpy",
             "request": "launch",
-            "program": "results/query_results/main/analysis.py",
+            "program": "results/experiments/analysis.py",
             "console": "integratedTerminal",
             "args": [
                 "--model_name", "gpt3.5"

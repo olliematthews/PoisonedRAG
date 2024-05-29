@@ -1,18 +1,18 @@
 import argparse
 import os
 import json
-from tqdm import tqdm
 import random
-import numpy as np
 from src.models import create_model
 from src.utils import load_beir_datasets, load_models
 from src.utils import save_results, load_json, setup_seeds, clean_str, f1_score
 from src.attack import Attacker
-from src.prompts import wrap_prompt
+from src.prompts import wrap_prompt, PROMPT_W_CONTEXT, PROMPT_WO_CONTEXT
 import torch
 from pathlib import Path
 import pickle
 import asyncio
+from typing import Optional
+
 
 CACHE_DIR = Path("./.cache")
 CACHE_DIR.mkdir(exist_ok=True)
@@ -33,7 +33,6 @@ def parse_args():
         default=None,
         help="Eval results of eval_model on the original beir eval_dataset",
     )
-    parser.add_argument("--query_results_dir", type=str, default="main")
 
     # LLM settings
     parser.add_argument("--model_config_path", default=None, type=str)
@@ -54,20 +53,14 @@ def parse_args():
         "--score_function", type=str, default="dot", choices=["dot", "cos_sim"]
     )
     parser.add_argument(
-        "--repeat_times",
-        type=int,
-        default=10,
-        help="repeat several times to compute average",
-    )
-    parser.add_argument(
         "--M",
         type=int,
         default=10,
-        help="one of our parameters, the number of target queries",
+        help="Number of target queries",
     )
     parser.add_argument("--seed", type=int, default=12, help="Random seed")
     parser.add_argument(
-        "--name", type=str, default="debug", help="Name of log and result."
+        "--name", type=Optional[str], default=None, help="Name of log and result."
     )
 
     args = parser.parse_args()
@@ -96,10 +89,10 @@ def main():
         with open(cache_file, "rb") as fd:
             corpus, queries, qrels = pickle.load(fd)
 
-    incorrect_answers = load_json(f"results/target_queries/{args.eval_dataset}.json")
+    dataset_questions = load_json(f"results/target_queries/{args.eval_dataset}.json")
 
-    if args.eval_dataset == "msmarco":
-        random.shuffle(incorrect_answers)
+    random.shuffle(dataset_questions)
+    dataset_questions = dataset_questions[: args.M]
 
     # load BEIR top_k results
     if args.orig_beir_results is None:
@@ -119,221 +112,163 @@ def main():
         assert os.path.exists(
             args.orig_beir_results
         ), f"Failed to get beir_results from {args.orig_beir_results}!"
-        print(f"Automatically get beir_resutls from {args.orig_beir_results}.")
+        print(f"Automatically get beir_results from {args.orig_beir_results}.")
     with open(args.orig_beir_results, "r") as f:
         results = json.load(f)
     # assert len(qrels) <= len(results)
     print("Total samples:", len(results))
 
-    if args.use_truth == "True":
-        args.attack_method = None
-
-    if args.attack_method not in [None, "None"]:
-        # Load retrieval models
-        model, c_model, tokenizer, get_emb = load_models(args.eval_model_code)
-        model.eval()
-        model.to(device)
-        c_model.eval()
-        c_model.to(device)
-        attacker = Attacker(
-            args, model=model, c_model=c_model, tokenizer=tokenizer, get_emb=get_emb
-        )
+    # Load retrieval models
+    model, c_model, tokenizer, get_emb = load_models(args.eval_model_code)
+    model.eval()
+    model.to(device)
+    c_model.eval()
+    c_model.to(device)
+    attacker = Attacker(
+        args, model=model, c_model=c_model, tokenizer=tokenizer, get_emb=get_emb
+    )
 
     llm = create_model(args.model_config_path)
 
-    all_results = []
-    asr_list = []
-    ret_list = []
-
-    for iter in range(args.repeat_times):
-        print(
-            f"######################## Iter: {iter+1}/{args.repeat_times} #######################"
+    target_queries = []
+    for question_info in dataset_questions:
+        top1_idx = list(results[question_info["id"]].keys())[0]
+        top1_score = results[question_info["id"]][top1_idx]
+        target_queries.append(
+            {
+                "query": question_info["question"],
+                "top1_score": top1_score,
+                "id": question_info["id"],
+            }
         )
 
-        target_queries_idx = range(iter * args.M, iter * args.M + args.M)
-        target_queries = [
-            incorrect_answers[idx]["question"] for idx in target_queries_idx
+    adv_text_groups = attacker.get_attack(target_queries)
+    adv_text_list = sum(adv_text_groups, [])  # convert 2D array to 1D array
+
+    adv_input = tokenizer(
+        adv_text_list, padding=True, truncation=True, return_tensors="pt"
+    )
+    adv_input = {key: value.cuda() for key, value in adv_input.items()}
+    with torch.no_grad():
+        adv_embs = get_emb(c_model, adv_input)
+
+    ret_sublist = []
+
+    iter_results = []
+    for question_info, adv_text_group in zip(dataset_questions, adv_text_groups):
+        question = question_info["question"]
+        qid = question_info["id"]
+
+        gt_ids = list(qrels[qid].keys())
+
+        # Pass in the query with no context to get an idea of what the model "knows"
+        query_prompt = wrap_prompt(question, None)
+        iter_results.append(
+            {
+                "question_id": qid,
+                "query_type": "No context",
+                "input_prompt": query_prompt,
+            }
+        )
+
+        # Test it with context, but no poisoning
+        topk_idx = list(results[question_info["id"]].keys())[: args.top_k]
+        topk_results = [
+            {
+                "score": results[question_info["id"]][idx],
+                "context": corpus[idx]["text"],
+            }
+            for idx in topk_idx
         ]
 
-        if args.attack_method not in [None, "None"]:
-            for i in target_queries_idx:
-                top1_idx = list(results[incorrect_answers[i]["id"]].keys())[0]
-                top1_score = results[incorrect_answers[i]["id"]][top1_idx]
-                target_queries[i - iter * args.M] = {
-                    "query": target_queries[i - iter * args.M],
-                    "top1_score": top1_score,
-                    "id": incorrect_answers[i]["id"],
-                }
+        topk_contents = [topk_results[j]["context"] for j in range(args.top_k)]
 
-            adv_text_groups = attacker.get_attack(target_queries)
-            adv_text_list = sum(adv_text_groups, [])  # convert 2D array to 1D array
+        query_prompt = wrap_prompt(question, topk_contents)
 
-            adv_input = tokenizer(
-                adv_text_list, padding=True, truncation=True, return_tensors="pt"
-            )
-            adv_input = {key: value.cuda() for key, value in adv_input.items()}
-            with torch.no_grad():
-                adv_embs = get_emb(c_model, adv_input)
-
-        asr_cnt = 0
-        ret_sublist = []
-
-        iter_results = []
-        for i in target_queries_idx:
-            iter_idx = i - iter * args.M  # iter index
-            question = incorrect_answers[i]["question"]
-
-            gt_ids = list(qrels[incorrect_answers[i]["id"]].keys())
-            incco_ans = incorrect_answers[i]["incorrect answer"]
-
-            # Pass in the query with no context to get an idea of what the model "knows"
-            query_prompt = wrap_prompt(question, None)
-            iter_results.append(
-                {
-                    "query_type": "No context",
-                    "question": question,
-                    "input_prompt": query_prompt,
-                }
-            )
-
-            topk_idx = list(results[incorrect_answers[i]["id"]].keys())[: args.top_k]
-            topk_results = [
-                {
-                    "score": results[incorrect_answers[i]["id"]][idx],
-                    "context": corpus[idx]["text"],
-                }
-                for idx in topk_idx
-            ]
-
-            # Test it with context, but no poisoning
-            topk_contents = [topk_results[j]["context"] for j in range(args.top_k)]
-            adv_text_set = set()
-
-            query_prompt = wrap_prompt(question, topk_contents)
-
-            iter_results.append(
-                {
-                    "query_type": "Context no poisoning",
-                    "id": incorrect_answers[i]["id"],
-                    "question": question,
-                    "input_prompt": query_prompt,
-                    "answer": incorrect_answers[i]["correct answer"],
-                }
-            )
-
-            # Test it with context, with poisoning
-            query_input = tokenizer(
-                question, padding=True, truncation=True, return_tensors="pt"
-            )
-            query_input = {key: value.cuda() for key, value in query_input.items()}
-            with torch.no_grad():
-                query_emb = get_emb(model, query_input)
-            for j in range(len(adv_text_list)):
-                adv_emb = adv_embs[j, :].unsqueeze(0)
-                # similarity
-                if args.score_function == "dot":
-                    adv_sim = torch.mm(adv_emb, query_emb.T).cpu().item()
-                elif args.score_function == "cos_sim":
-                    adv_sim = torch.cosine_similarity(adv_emb, query_emb).cpu().item()
-
-                topk_results.append({"score": adv_sim, "context": adv_text_list[j]})
-
-            topk_results = sorted(
-                topk_results, key=lambda x: float(x["score"]), reverse=True
-            )
-            topk_contents = [topk_results[j]["context"] for j in range(args.top_k)]
-            # tracking the num of adv_text in topk
-            adv_text_set = set(adv_text_groups[iter_idx])
-
-            cnt_from_adv = sum([i in adv_text_set for i in topk_contents])
-            ret_sublist.append(cnt_from_adv)
-            query_prompt = wrap_prompt(question, topk_contents)
-
-            injected_adv = [i for i in topk_contents if i in adv_text_set]
-            iter_results.append(
-                {
-                    "query_type": "Context with poisoning",
-                    "id": incorrect_answers[i]["id"],
-                    "question": question,
-                    "injected_adv": injected_adv,
-                    "input_prompt": query_prompt,
-                    "incorrect_answer": incco_ans,
-                    "answer": incorrect_answers[i]["correct answer"],
-                }
-            )
-
-            # Test with the correct context as as well as poisoned answers
-            gts = [corpus[id]["text"] for id in gt_ids]
-            topk_contents = gts + topk_contents
-            # tracking the num of adv_text in topk
-            adv_text_set = set(adv_text_groups[iter_idx])
-
-            query_prompt = wrap_prompt(question, topk_contents)
-
-            injected_adv = [i for i in topk_contents if i in adv_text_set]
-            iter_results.append(
-                {
-                    "query_type": "Context with gt and poisoning",
-                    "id": incorrect_answers[i]["id"],
-                    "question": question,
-                    "injected_adv": injected_adv,
-                    "input_prompt": query_prompt,
-                    "incorrect_answer": incco_ans,
-                    "answer": incorrect_answers[i]["correct answer"],
-                }
-            )
-
-        if not llm.is_async:
-            for iter_result in zip(iter_results):
-                response = llm.query(iter_result["input_prompt"])
-                iter_result["output"] = response
-                if clean_str(incco_ans) in clean_str(response):
-                    asr_cnt += 1
-        else:
-
-            async def run_all_queries(iter_results):
-                nonlocal asr_cnt
-
-                async def run_query(iter_result):
-                    nonlocal asr_cnt
-                    response = await llm.aquery(iter_result["input_prompt"])
-                    iter_result["output"] = response
-                    if clean_str(incco_ans) in clean_str(response):
-                        asr_cnt += 1
-
-                await asyncio.gather(
-                    *[run_query(iter_result) for iter_result in iter_results]
-                )
-
-            asyncio.run(run_all_queries(iter_results))
-        asr_list.append(asr_cnt)
-        ret_list.append(ret_sublist)
-
-        all_results.append(iter_results)
-        save_results(all_results, args.query_results_dir, args.name)
-        print(
-            f"Saving iter results to results/query_results/{args.query_results_dir}/{args.name}.json"
+        iter_results.append(
+            {
+                "question_id": qid,
+                "query_type": "Context no poisoning",
+                "input_prompt": query_prompt,
+            }
         )
 
-    asr = np.array(asr_list) / args.M
-    asr_mean = round(np.mean(asr), 2)
-    ret_precision_array = np.array(ret_list) / args.top_k
-    ret_precision_mean = round(np.mean(ret_precision_array), 2)
-    ret_recall_array = np.array(ret_list) / args.adv_per_query
-    ret_recall_mean = round(np.mean(ret_recall_array), 2)
+        # Test it with context, with poisoning
+        query_input = tokenizer(
+            question, padding=True, truncation=True, return_tensors="pt"
+        )
+        query_input = {key: value.cuda() for key, value in query_input.items()}
+        with torch.no_grad():
+            query_emb = get_emb(model, query_input)
+        for j in range(len(adv_text_list)):
+            adv_emb = adv_embs[j, :].unsqueeze(0)
+            # similarity
+            if args.score_function == "dot":
+                adv_sim = torch.mm(adv_emb, query_emb.T).cpu().item()
+            elif args.score_function == "cos_sim":
+                adv_sim = torch.cosine_similarity(adv_emb, query_emb).cpu().item()
 
-    ret_f1_array = f1_score(ret_precision_array, ret_recall_array)
-    ret_f1_mean = round(np.mean(ret_f1_array), 2)
+            topk_results.append({"score": adv_sim, "context": adv_text_list[j]})
 
-    print(f"ASR: {asr}")
-    print(f"ASR Mean: {asr_mean}\n")
+        topk_results = sorted(
+            topk_results, key=lambda x: float(x["score"]), reverse=True
+        )
+        topk_contents = [topk_results[j]["context"] for j in range(args.top_k)]
+        # tracking the num of adv_text in topk
+        adv_text_set = set(adv_text_group)
 
-    print(f"Ret: {ret_list}")
-    print(f"Precision mean: {ret_precision_mean}")
-    print(f"Recall mean: {ret_recall_mean}")
-    print(f"F1 mean: {ret_f1_mean}\n")
+        cnt_from_adv = sum([i in adv_text_set for i in topk_contents])
+        ret_sublist.append(cnt_from_adv)
+        query_prompt = wrap_prompt(question, topk_contents)
 
-    print(f"Ending...")
+        injected_adv = [i for i in topk_contents if i in adv_text_set]
+        iter_results.append(
+            {
+                "question_id": qid,
+                "query_type": "Context with poisoning",
+                "injected_adv": injected_adv,
+                "input_prompt": query_prompt,
+            }
+        )
+
+        # Test with the correct context as as well as poisoned answers
+        gts = [corpus[id]["text"] for id in gt_ids]
+        topk_contents = gts + topk_contents
+
+        query_prompt = wrap_prompt(question, topk_contents)
+        iter_results.append(
+            {
+                "question_id": qid,
+                "query_type": "Context with gt and poisoning",
+                "injected_adv": injected_adv,
+                "input_prompt": query_prompt,
+            }
+        )
+
+    if not llm.is_async:
+        for iter_result in zip(iter_results):
+            response = llm.query(iter_result["input_prompt"])
+            iter_result["output"] = response
+    else:
+
+        async def run_all_queries(iter_results):
+            async def run_query(iter_result):
+                response = await llm.aquery(iter_result["input_prompt"])
+                iter_result["output"] = response
+
+            await asyncio.gather(
+                *[run_query(iter_result) for iter_result in iter_results]
+            )
+
+        asyncio.run(run_all_queries(iter_results))
+
+    data = {
+        "prompt_with_context": PROMPT_W_CONTEXT,
+        "prompt_without_context": PROMPT_WO_CONTEXT,
+        "args": args.__dict__,
+        "results": iter_results,
+    }
+    save_results(data, args.name)
 
 
 if __name__ == "__main__":

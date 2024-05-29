@@ -1,6 +1,7 @@
 from openai import AsyncOpenAI, OpenAI
 from .Model import Model
 from pathlib import Path
+from asyncio import sleep
 
 
 class GPT(Model):
@@ -31,20 +32,23 @@ class GPT(Model):
         return response
 
     async def aquery(self, msg):
-        try:
-            completion = await self.aclient.chat.completions.create(
-                model=self.name,
-                temperature=self.temperature,
-                max_tokens=self.max_output_tokens,
-                messages=[
-                    {"role": "system", "content": "You are a helpful assistant."},
-                    {"role": "user", "content": msg},
-                ],
-            )
-            response = completion.choices[0].message.content
+        while True:
+            try:
+                completion = await self.aclient.chat.completions.create(
+                    model=self.name,
+                    temperature=self.temperature,
+                    max_tokens=self.max_output_tokens,
+                    messages=[
+                        {"role": "system", "content": "You are a helpful assistant."},
+                        {"role": "user", "content": msg},
+                    ],
+                )
+                response = completion.choices[0].message.content
+                break
 
-        except Exception as e:
-            print(e)
-            response = ""
+            except Exception as e:
+                print(e)
+                response = ""
+                sleep(5)
 
         return response

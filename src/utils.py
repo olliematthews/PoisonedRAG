@@ -8,8 +8,12 @@ from collections import defaultdict
 import random
 import torch
 from transformers import AutoTokenizer
-
+from pathlib import Path
 from sentence_transformers import SentenceTransformer
+
+
+base_experiment_dir = Path("results", "experiments")
+base_experiment_dir.mkdir(exist_ok=True)
 
 model_code_to_qmodel_name = {
     "contriever": "facebook/contriever",
@@ -99,17 +103,29 @@ class NpEncoder(json.JSONEncoder):
             return super(NpEncoder, self).default(obj)
 
 
-def save_results(results, dir, file_name="debug"):
-    json_dict = json.dumps(results, cls=NpEncoder)
-    dict_from_str = json.loads(json_dict)
-    if not os.path.exists(f"results/query_results/{dir}"):
-        os.makedirs(f"results/query_results/{dir}", exist_ok=True)
-    with open(
-        os.path.join(f"results/query_results/{dir}", f"{file_name}.json"),
-        "w",
-        encoding="utf-8",
-    ) as f:
-        json.dump(dict_from_str, f)
+def get_next_name(prefix, dir):
+    past_experiments = [
+        d.name[len(prefix) :] for d in dir.iterdir() if d.name.startswith(prefix)
+    ]
+    experiment_index = 0
+    for d in past_experiments:
+        try:
+            index = int(d)
+        except ValueError:
+            continue
+        if index >= experiment_index:
+            experiment_index = index + 1
+    return f"{prefix}{experiment_index}"
+
+
+def save_results(results, experiment_name=None):
+    if experiment_name is None:
+        experiment_name = get_next_name("experiment_", base_experiment_dir)
+    save_dir = base_experiment_dir / experiment_name
+    save_dir.mkdir(exist_ok=True)
+    results_file = get_next_name("results_", save_dir) + ".json"
+    with open(save_dir / results_file, "w") as f:
+        json.dump(results, f)
 
 
 def load_results(file_name):
