@@ -104,18 +104,18 @@ class NpEncoder(json.JSONEncoder):
 
 
 def get_next_name(prefix, dir):
-    past_experiments = [
-        d.name[len(prefix) :] for d in dir.iterdir() if d.name.startswith(prefix)
+    past_prefix_matches = [
+        d.stem[len(prefix) :] for d in dir.iterdir() if d.stem.startswith(prefix)
     ]
-    experiment_index = 0
-    for d in past_experiments:
+    top_index = 0
+    for d in past_prefix_matches:
         try:
             index = int(d)
         except ValueError:
             continue
-        if index >= experiment_index:
-            experiment_index = index + 1
-    return f"{prefix}{experiment_index}"
+        if index >= top_index:
+            top_index = index + 1
+    return f"{prefix}{top_index}"
 
 
 def save_results(results, experiment_name=None):

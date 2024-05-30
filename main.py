@@ -6,7 +6,7 @@ from src.models import create_model
 from src.utils import load_beir_datasets, load_models
 from src.utils import save_results, load_json, setup_seeds, clean_str, f1_score
 from src.attack import Attacker
-from src.prompts import wrap_prompt, PROMPT_W_CONTEXT, PROMPT_WO_CONTEXT
+from src.prompts.prompts import wrap_prompt, get_prompts
 import torch
 from pathlib import Path
 import pickle
@@ -60,7 +60,10 @@ def parse_args():
     )
     parser.add_argument("--seed", type=int, default=12, help="Random seed")
     parser.add_argument(
-        "--name", type=Optional[str], default=None, help="Name of log and result."
+        "--name", type=str, default=None, help="Name of log and result."
+    )
+    parser.add_argument(
+        "--prompt", type=str, default="original", help="The prompt to use."
     )
 
     args = parser.parse_args()
@@ -142,6 +145,7 @@ def main():
             }
         )
 
+    prompts = get_prompts(args.prompt)
     adv_text_groups = attacker.get_attack(target_queries)
     adv_text_list = sum(adv_text_groups, [])  # convert 2D array to 1D array
 
@@ -162,7 +166,7 @@ def main():
         gt_ids = list(qrels[qid].keys())
 
         # Pass in the query with no context to get an idea of what the model "knows"
-        query_prompt = wrap_prompt(question, None)
+        query_prompt = wrap_prompt(question, None, prompts)
         iter_results.append(
             {
                 "question_id": qid,
@@ -183,7 +187,7 @@ def main():
 
         topk_contents = [topk_results[j]["context"] for j in range(args.top_k)]
 
-        query_prompt = wrap_prompt(question, topk_contents)
+        query_prompt = wrap_prompt(question, topk_contents, prompts)
 
         iter_results.append(
             {
@@ -219,7 +223,7 @@ def main():
 
         cnt_from_adv = sum([i in adv_text_set for i in topk_contents])
         ret_sublist.append(cnt_from_adv)
-        query_prompt = wrap_prompt(question, topk_contents)
+        query_prompt = wrap_prompt(question, topk_contents, prompts)
 
         injected_adv = [i for i in topk_contents if i in adv_text_set]
         iter_results.append(
@@ -235,7 +239,7 @@ def main():
         gts = [corpus[id]["text"] for id in gt_ids]
         topk_contents = gts + topk_contents
 
-        query_prompt = wrap_prompt(question, topk_contents)
+        query_prompt = wrap_prompt(question, topk_contents, prompts)
         iter_results.append(
             {
                 "question_id": qid,
@@ -263,8 +267,7 @@ def main():
         asyncio.run(run_all_queries(iter_results))
 
     data = {
-        "prompt_with_context": PROMPT_W_CONTEXT,
-        "prompt_without_context": PROMPT_WO_CONTEXT,
+        "prompts": prompts,
         "args": args.__dict__,
         "results": iter_results,
     }

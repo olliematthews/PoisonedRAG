@@ -11,7 +11,9 @@
             "program": "main.py",
             "console": "integratedTerminal",
             "args": [
-                "--model_name", "gpt4"
+                "--model_name", "gpt4",
+                "--name", "experiment_2",
+                "--prompt", "cot"
             ]
         },
         {

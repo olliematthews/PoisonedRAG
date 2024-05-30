@@ -4,48 +4,38 @@ import json
 
 
 def is_correct(row):
-    return row["correct answer"].lower() in row["output"].lower()
+    answer = row["output"].split("Answer:")[-1].strip().lower()
+    return row["correct answer"].lower() in answer
 
 
 def is_incorrect(row):
-    return row["incorrect answer"].lower() in row["output"].lower()
+    answer = row["output"].split("Answer:")[-1].strip().lower()
+    return row["incorrect answer"].lower() in answer
 
 
 cdir = Path(__file__).parent
 
-with open(cdir / "experiment_2" / "results_0.json") as fd:
-    data_0 = json.load(fd)
-with open(cdir / "experiment_2" / "results_1.json") as fd:
-    data_1 = json.load(fd)
-with open(cdir / "experiment_2" / "results_2.json") as fd:
-    data_2 = json.load(fd)
+
+def load_df(results_path):
+    with open(results_path) as fd:
+        data = json.load(fd)
+    dataset_questions = pd.read_json(
+        f"results/target_queries/{data['args']['eval_dataset']}.json"
+    )
+    dataset_questions.set_index("id", inplace=True)
+    results = pd.DataFrame(data["results"]).join(dataset_questions, on="question_id")
+    results["correct"] = results.apply(is_correct, axis=1)
+    results["poisoned"] = results.apply(is_incorrect, axis=1)
+    return results
 
 
-dataset_questions = pd.read_json(
-    f"results/target_queries/{data_0['args']['eval_dataset']}.json"
-)
-dataset_questions.set_index("id", inplace=True)
-
-results_original_prompt = pd.DataFrame(data_0["results"]).join(
-    dataset_questions, on="question_id"
-)
-results_guarded_prompt = pd.DataFrame(data_1["results"]).join(
-    dataset_questions, on="question_id"
-)
-results_gpt4_prompt = pd.DataFrame(data_2["results"]).join(
-    dataset_questions, on="question_id"
-)
-
-results_original_prompt["correct"] = results_original_prompt.apply(is_correct, axis=1)
-results_original_prompt["poisoned"] = results_original_prompt.apply(
-    is_incorrect, axis=1
-)
-
-results_guarded_prompt["correct"] = results_guarded_prompt.apply(is_correct, axis=1)
-results_guarded_prompt["poisoned"] = results_guarded_prompt.apply(is_incorrect, axis=1)
-
-results_gpt4_prompt["correct"] = results_gpt4_prompt.apply(is_correct, axis=1)
-results_gpt4_prompt["poisoned"] = results_gpt4_prompt.apply(is_incorrect, axis=1)
+results_original_prompt = load_df(cdir / "experiment_2" / "results_0.json")
+results_guarded_prompt = load_df(cdir / "experiment_2" / "results_1.json")
+results_gpt4 = load_df(cdir / "experiment_2" / "results_2.json")
+results_cot_gpt3p5 = load_df(cdir / "experiment_2" / "results_3.json")
+results_cot_gpt3p5_prompt2 = load_df(cdir / "experiment_2" / "results_4.json")
+results_cot_gpt4 = load_df(cdir / "experiment_2" / "results_5.json")
+results_cot_gpt4_prompt2 = load_df(cdir / "experiment_2" / "results_6.json")
 
 
-print()
+print("HI")
