@@ -260,6 +260,21 @@ def main():
                 response = await llm.aquery(iter_result["input_prompt"])
                 iter_result["output"] = response
 
+                if (
+                    args.prompt == "cot"
+                    and iter_result["query_type"] != "No context"
+                    and "Answer:" not in response
+                ):
+                    iter_result["initial_output"] = response
+                    follow_up_prompt = (
+                        iter_result["input_prompt"] + response + "\nAnswer:"
+                    )
+                    iter_result["follow_up_prompt"] = follow_up_prompt
+                    follow_up_response = await llm.aquery(follow_up_prompt)
+                    iter_result["output"] = follow_up_response
+                else:
+                    iter_result["output"] = response
+
             await asyncio.gather(
                 *[run_query(iter_result) for iter_result in iter_results]
             )
