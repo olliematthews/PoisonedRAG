@@ -1,6 +1,8 @@
 from pathlib import Path
 import pandas as pd
 import json
+import numpy as np
+import matplotlib.pyplot as plt
 
 
 def is_correct(row):
@@ -36,6 +38,18 @@ results_cot_gpt3p5 = load_df(cdir / "experiment_2" / "results_3.json")
 results_cot_gpt3p5_prompt2 = load_df(cdir / "experiment_2" / "results_4.json")
 results_cot_gpt4 = load_df(cdir / "experiment_2" / "results_5.json")
 results_cot_gpt4_prompt2 = load_df(cdir / "experiment_2" / "results_6.json")
+results_cot_gpt3p5_reprompt = load_df(cdir / "experiment_2" / "results_6.json")
 
 
+def filter(db):
+    return np.mean(db[db["query_type"] == "Context with gt and poisoning"]["poisoned"])
+
+
+results = {
+    "original prompt": filter(results_original_prompt),
+    "refined prompt": filter(results_original_prompt),
+    "cot prompting": filter(results_cot_gpt3p5_prompt2),
+}
+# plt.bar(results.keys(), results.values())
+# plt.savefig("image.png")
 print("HI")
