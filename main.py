@@ -2,6 +2,8 @@ import argparse
 import os
 import json
 import random
+
+import tqdm.asyncio
 from src.models import create_model
 from src.utils import load_beir_datasets, load_models
 from src.utils import save_results, load_json, setup_seeds, clean_str, f1_score
@@ -12,6 +14,7 @@ from pathlib import Path
 import pickle
 import asyncio
 from typing import Optional
+import tqdm
 
 
 CACHE_DIR = Path("./.cache")
@@ -73,8 +76,8 @@ def parse_args():
 
 def main():
     args = parse_args()
-    torch.cuda.set_device(args.gpu_id)
-    device = "cuda"
+    # torch.cuda.set_device(args.gpu_id)
+    device = "cpu"
     setup_seeds(args.seed)
     if args.model_config_path == None:
         args.model_config_path = f"model_configs/{args.model_name}_config.json"
@@ -152,7 +155,7 @@ def main():
     adv_input = tokenizer(
         adv_text_list, padding=True, truncation=True, return_tensors="pt"
     )
-    adv_input = {key: value.cuda() for key, value in adv_input.items()}
+    adv_input = {key: value for key, value in adv_input.items()}
     with torch.no_grad():
         adv_embs = get_emb(c_model, adv_input)
 
@@ -189,19 +192,19 @@ def main():
 
         query_prompt = wrap_prompt(question, topk_contents, prompts)
 
-        iter_results.append(
-            {
-                "question_id": qid,
-                "query_type": "Context no poisoning",
-                "input_prompt": query_prompt,
-            }
-        )
+        # iter_results.append(
+        #     {
+        #         "question_id": qid,
+        #         "query_type": "Context no poisoning",
+        #         "input_prompt": query_prompt,
+        #     }
+        # )
 
         # Test it with context, with poisoning
         query_input = tokenizer(
             question, padding=True, truncation=True, return_tensors="pt"
         )
-        query_input = {key: value.cuda() for key, value in query_input.items()}
+        query_input = {key: value for key, value in query_input.items()}
         with torch.no_grad():
             query_emb = get_emb(model, query_input)
         for j in range(len(adv_text_list)):
@@ -256,26 +259,39 @@ def main():
     else:
 
         async def run_all_queries(iter_results):
-            async def run_query(iter_result):
-                response = await llm.aquery(iter_result["input_prompt"])
-                iter_result["output"] = response
+            sem = asyncio.Semaphore(10)
+            count = 0
 
-                if (
-                    args.prompt == "cot"
-                    and iter_result["query_type"] != "No context"
-                    and "Answer:" not in response
-                ):
-                    iter_result["initial_output"] = response
-                    follow_up_prompt = (
-                        iter_result["input_prompt"] + response + "\nAnswer:"
-                    )
-                    iter_result["follow_up_prompt"] = follow_up_prompt
-                    follow_up_response = await llm.aquery(follow_up_prompt)
-                    iter_result["output"] = follow_up_response
-                else:
+            print("Starting queries")
+
+            # prog = tqdm.tqdm(total = len(iter_results))
+            async def run_query(iter_result):
+                nonlocal count
+                async with sem:
+                    count += 1
+                    # tqdm.
+                    response = await llm.aquery(iter_result["input_prompt"], 10)
                     iter_result["output"] = response
 
-            await asyncio.gather(
+                    if (
+                        args.prompt == "cot"
+                        and iter_result["query_type"] != "No context"
+                        and "Answer:" not in response
+                    ):
+                        iter_result["initial_output"] = response
+                        follow_up_prompt = (
+                            iter_result["input_prompt"] + response + "\nAnswer:"
+                        )
+                        iter_result["follow_up_prompt"] = follow_up_prompt
+                        follow_up_response = await llm.aquery(follow_up_prompt)
+                        iter_result["output"] = follow_up_response
+                    else:
+                        iter_result["output"] = response
+                    # if not count % 10:
+                    #     print(f"Progress: {count / total * 100}%")
+
+            # tqdm.asyncio.gather
+            await tqdm.asyncio.tqdm_asyncio.gather(
                 *[run_query(iter_result) for iter_result in iter_results]
             )
 

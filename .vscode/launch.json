@@ -11,9 +11,10 @@
             "program": "main.py",
             "console": "integratedTerminal",
             "args": [
-                "--model_name", "gpt4",
-                "--name", "experiment_2",
-                "--prompt", "cot"
+                "--model_name", "gpt3.5",
+                "--name", "experiment_3_100q",
+                "--prompt", "cot",
+                "--M", "100"
             ]
         },
         {
@@ -25,6 +26,17 @@
             "args": [
                 "--model_name", "gpt3.5"
             ]
+        },
+        {
+            "name": "Current File",
+            "type": "debugpy",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "args": [
+                "--model_name", "gpt3.5"
+            ]
         }
+
     ]
 }

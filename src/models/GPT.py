@@ -31,7 +31,7 @@ class GPT(Model):
 
         return response
 
-    async def aquery(self, msg):
+    async def aquery(self, msg, backoff=10):
         while True:
             try:
                 completion = await self.aclient.chat.completions.create(
@@ -49,6 +49,6 @@ class GPT(Model):
             except Exception as e:
                 print(e)
                 response = ""
-                sleep(5)
+                await sleep(backoff)
 
         return response
