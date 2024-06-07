@@ -34,6 +34,8 @@ def load_df(results_path):
 results_original_prompt_3p5 = load_df(cdir / "experiment_3_100q" / "results_3.json")
 results_refined_prompt_3p5 = load_df(cdir / "experiment_3_100q" / "results_2.json")
 results_cot_prompt_3p5 = load_df(cdir / "experiment_3_100q" / "results_4.json")
+results_cot_prompt_3p5_adv1 = load_df(cdir / "experiment_3_100q" / "results_6.json")
+results_cot_prompt_3p5_adv1_k1 = load_df(cdir / "experiment_3_100q" / "results_7.json")
 # results_gpt4 = load_df(cdir / "experiment_2" / "results_2.json")
 # results_cot_gpt3p5 = load_df(cdir / "experiment_2" / "results_3.json")
 # results_cot_gpt3p5_prompt2 = load_df(cdir / "experiment_2" / "results_4.json")

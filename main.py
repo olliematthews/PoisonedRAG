@@ -170,13 +170,13 @@ def main():
 
         # Pass in the query with no context to get an idea of what the model "knows"
         query_prompt = wrap_prompt(question, None, prompts)
-        iter_results.append(
-            {
-                "question_id": qid,
-                "query_type": "No context",
-                "input_prompt": query_prompt,
-            }
-        )
+        # iter_results.append(
+        #     {
+        #         "question_id": qid,
+        #         "query_type": "No context",
+        #         "input_prompt": query_prompt,
+        #     }
+        # )
 
         # Test it with context, but no poisoning
         topk_idx = list(results[question_info["id"]].keys())[: args.top_k]
@@ -233,6 +233,7 @@ def main():
             {
                 "question_id": qid,
                 "query_type": "Context with poisoning",
+                "provided_context": topk_contents,
                 "injected_adv": injected_adv,
                 "input_prompt": query_prompt,
             }
@@ -247,6 +248,7 @@ def main():
             {
                 "question_id": qid,
                 "query_type": "Context with gt and poisoning",
+                "provided_context": topk_contents,
                 "injected_adv": injected_adv,
                 "input_prompt": query_prompt,
             }
