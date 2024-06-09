@@ -1,0 +1,1 @@
+{"context_configs": {"Context no poisoning": [5, 5, false, false], "Context with poisoning": [5, 5, true, false], "Context with poisoning and gt": [5, 5, true, true]}, "model": "gpt3.5", "prompt_types": ["original", "refined", "cot"]}

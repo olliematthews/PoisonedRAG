@@ -15,8 +15,6 @@
                 "--name", "experiment_3_100q",
                 "--prompt", "cot",
                 "--M", "100",
-                "--adv_per_query", "3",
-                "--top_k", "3"
             ]
         },
         {

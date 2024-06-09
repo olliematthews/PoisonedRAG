@@ -17,42 +17,25 @@ def is_incorrect(row):
 
 cdir = Path(__file__).parent
 
+experiment = "gpt3.5_final"
 
-def load_df(results_path):
-    with open(results_path) as fd:
-        data = json.load(fd)
-    dataset_questions = pd.read_json(
-        f"results/target_queries/{data['args']['eval_dataset']}.json"
-    )
-    dataset_questions.set_index("id", inplace=True)
-    results = pd.DataFrame(data["results"]).join(dataset_questions, on="question_id")
-    results["correct"] = results.apply(is_correct, axis=1)
-    results["poisoned"] = results.apply(is_incorrect, axis=1)
-    return results
+results_dir = cdir / experiment
+
+context_df = pd.read_pickle(results_dir / "context.p")
+outputs_df = pd.read_pickle(results_dir / "llm_outputs.p")
+questions_df = pd.read_pickle(results_dir / "questions.p")
 
 
-results_original_prompt_3p5 = load_df(cdir / "experiment_3_100q" / "results_3.json")
-results_refined_prompt_3p5 = load_df(cdir / "experiment_3_100q" / "results_2.json")
-results_cot_prompt_3p5 = load_df(cdir / "experiment_3_100q" / "results_4.json")
-results_cot_prompt_3p5_adv1 = load_df(cdir / "experiment_3_100q" / "results_6.json")
-results_cot_prompt_3p5_adv1_k1 = load_df(cdir / "experiment_3_100q" / "results_7.json")
-# results_gpt4 = load_df(cdir / "experiment_2" / "results_2.json")
-# results_cot_gpt3p5 = load_df(cdir / "experiment_2" / "results_3.json")
-# results_cot_gpt3p5_prompt2 = load_df(cdir / "experiment_2" / "results_4.json")
-# results_cot_gpt4 = load_df(cdir / "experiment_2" / "results_5.json")
-# results_cot_gpt4_prompt2 = load_df(cdir / "experiment_2" / "results_6.json")
-# results_cot_gpt3p5_reprompt = load_df(cdir / "experiment_2" / "results_6.json")
+results_df = pd.merge(
+    outputs_df.reset_index(),
+    questions_df[["question", "correct answer", "incorrect answer"]],
+    on="qid",
+)
 
+results_df["correct"] = results_df.apply(is_correct, axis=1)
+results_df["poisoned"] = results_df.apply(is_incorrect, axis=1)
 
-def filter(db):
-    return np.mean(db[db["query_type"] == "Context with gt and poisoning"]["poisoned"])
-
-
-# results = {
-#     "original prompt": filter(results_original_prompt),
-#     "refined prompt": filter(results_original_prompt),
-#     "cot prompting": filter(results_cot_gpt3p5_prompt2),
-# }
-# plt.bar(results.keys(), results.values())
-# plt.savefig("image.png")
-print("HI")
+results_df.groupby(["Prompt type", "Context type"]).agg(
+    {"poisoned": "mean", "correct": "mean"}
+)
+print("hi")
