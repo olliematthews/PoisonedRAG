@@ -29,7 +29,12 @@ experiment = "varying_n"
 
 dangerous_eval_plot = {}
 poisoned_plot = {}
-for experiment in ["varying_n_35", "varying_n_4"]:
+for experiment in [
+    "varying_n_35",
+    "varying_n_4",
+    "varying_n_4_red",
+    "varying_n_35_red",
+]:
     print(experiment)
     results_dir = cdir / experiment
 
@@ -77,19 +82,27 @@ for experiment in ["varying_n_35", "varying_n_4"]:
 # Plot dangerous eval
 fig, ax1 = plt.subplots()
 
-series_labels = {"varying_n_35": "gpt 3.5 turbo", "varying_n_4": "gpt 4o"}
+color_cycle = plt.rcParams["axes.prop_cycle"].by_key()["color"]
+series_labels = {
+    "varying_n_35": ("gpt 3.5 turbo", color_cycle[0], "-"),
+    "varying_n_4": ("gpt 4o", color_cycle[1], "-"),
+    "varying_n_4_red": ("gpt 4o w/ CVE", color_cycle[0], "--"),
+    "varying_n_35_red": ("gpt 3.5 turbo w/ CVE", color_cycle[1], "--"),
+}
 
 for experiment, plot in dangerous_eval_plot.items():
     x = [int(i) for i in plot.index]
     ax1.plot(
         x,
         plot,
-        label=series_labels[experiment],
+        label=series_labels[experiment][0],
+        color=series_labels[experiment][1],
+        linestyle=series_labels[experiment][2],
     )
 
 ax1.set_ylabel("Danger Identification Rate")
 
-ax1.set_xlabel("Number of injected prompts")
+ax1.set_xlabel("Number of poisoned prompts")
 fig.legend()
 
 plt.tight_layout()
@@ -99,19 +112,20 @@ plt.savefig("figures/varying_n_dangerous_eval.jpg")
 # Plot poisoned
 fig, ax1 = plt.subplots()
 
-series_labels = {"varying_n_35": "gpt 3.5 turbo", "varying_n_4": "gpt 4o"}
 
 for experiment, plot in poisoned_plot.items():
     x = [int(i[1]) for i in plot.index]
     ax1.plot(
         x,
         plot,
-        label=series_labels[experiment],
+        label=series_labels[experiment][0],
+        color=series_labels[experiment][1],
+        linestyle=series_labels[experiment][2],
     )
 
-ax1.set_ylabel("Poisoned Success Rate")
+ax1.set_ylabel("PoisonedRAG Success Rate")
 
-ax1.set_xlabel("Number of injected prompts")
+ax1.set_xlabel("Number of poisoned prompts")
 fig.legend()
 
 plt.tight_layout()

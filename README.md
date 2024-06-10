@@ -177,13 +177,24 @@ The approach also guards against many-shot jailbreak type attacks, where the con
 * The context limit is filled with false information, and the correct information is not ranked highly enough to make it into the context
 * The LLM is unable to deal well with multiple contexts which all point it in the same direction
 
-To demonstrate the second point, the graph below shows the effectiveness of the Danger Evaluator as the number of poisoned texts is increased. Note that in these results, I have also included the ground truth context source, which should provide the correct answer to the question.
+##### Performance with varying number of poisoned texts
 
-![varying_n_eval](figures/varying_n_dangerous_eval.jpg)
+To demonstrate the second above, the graphs below show the effect of increasing the number of poisoned texts on the pipeline. In both cases, we make up the context from the ground truth context combined with a varying number of poisoned texts. Since in each case the ground truth is provided, the LLM should be able to identify the correct answer, or see that it has been given contradictory information. 
 
-Particularly with the less powerful `gpt-3.5-turbo`, the model is not able to identify the contradictions in the context, even when the correct context is included. 
+The left graph shows how the "PoisonedRAG Success Rate" for CoT prompting varies with the number of poisoned texts. The right graph shows the effect on the Danger Evaluator's performance. 
 
-The effect of Context Variance Encouragement is effectively to reduce the number of poisoned items which make it into the context.
+
+<div style="display: flex; justify-content: space-around;">
+    <img src="figures/varying_n_poisoned.jpg" alt="varying_n_poisoned" width="400"/>
+    <img src="figures/varying_n_dangerous_eval.jpg" alt="varying_n_eval" width="400"/>
+</div>
+
+In both cases, we see performance drop as the number of poisoned items increases. Particularly with the less powerful `gpt-3.5-turbo`, the model is not able to identify the contradictions in the context, even when the correct context is included. The Danger Evaluator's identification rate drops from 0.79 to 0.48 when the number of attacks increases from 1 to 5, and the attack success rate goes up from 0.31 to 0.6. 
+
+The `gpt 4o` models are less affected. The PoisonedRAG Success Rate does go up slightly, and there is a marginal drop in performance of the "Danger Evaluator" (from 0.98 to 0.97). It is likely that with a larger number of attacks, the performance of this model would also drop, however. 
+
+
+The effect of Context Variance Encouragement is effectively to reduce the number of poisoned items which make it into the context. The graphs above demonstrate this - for both models, the performance does not change significantly with the number of poisoned prompts if CVE is applied. 
 
 ## Conclusion
 

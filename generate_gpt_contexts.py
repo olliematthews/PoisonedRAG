@@ -38,13 +38,6 @@ def get_context(row, accept_thresh, n, similarity_rej_thresh=None):
 
     cos_sim = np.dot(all_context_embeddings_norm, qemb_norm)
 
-    # for gt in row["gt_ids"]:
-    #     index = list(extended_corpus_df.index).index(gt)
-    #     score = cos_sim[index]
-    # print(
-    #     "MATCH HAS", score, "Comes in", sorted(cos_sim, reverse=True).index(score)
-    # )
-
     relevant = emb_df[cos_sim > accept_thresh]
     relevant["relevance"] = cos_sim[cos_sim > accept_thresh]
 
@@ -60,12 +53,8 @@ def get_context(row, accept_thresh, n, similarity_rej_thresh=None):
             if not any(
                 [np.dot(emb_rel_norm, e) > similarity_rej_thresh for e in embeddings]
             ):
-                # if contexts and "attack" in qid:
-                #     print("GOT THRU", [np.dot(emb_rel_norm, e) for e in embeddings])
                 contexts.append(qid)
                 embeddings.append(emb_rel_norm)
-            # elif not "attack" in qid:
-            #     print("DIDN't GET THRU", [np.dot(emb_rel_norm, e) for e in embeddings])
 
             if len(contexts) >= n:
                 break

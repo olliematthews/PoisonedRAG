@@ -10,7 +10,7 @@ import json
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
 
-experiment_name = "varying_n_4"
+experiment_name = "varying_n_35_red"
 results_dir = EXPERIMENT_DIR / experiment_name
 results_dir.mkdir(exist_ok=True, parents=True)
 
