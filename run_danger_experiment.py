@@ -9,8 +9,8 @@ from src.danger_identification import identify_dangerous_async
 
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
-combined = True
-experiment_name = "final_4"
+combined = False
+experiment_name = "varying_n_4"
 
 results_dir = EXPERIMENT_DIR / experiment_name
 

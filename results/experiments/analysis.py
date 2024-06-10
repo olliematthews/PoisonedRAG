@@ -114,5 +114,4 @@ ax.set_xticklabels(axis_labels, rotation=45)
 fig.legend()
 
 plt.tight_layout()
-plt.savefig("poisoned.jpg")
-print("HI")
+plt.savefig("figures/main_plot.jpg")
