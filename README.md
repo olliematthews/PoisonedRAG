@@ -19,6 +19,29 @@ Ultimately, I show that the risk of these attacks can be largely mitigated with 
 
 I go into more detail about each method tried in the [mitigations](#mitigations) section.
 
+
+### Other Approaches
+
+The recent [Robust RAG](https://arxiv.org/abs/2405.15556) paper tackles the same problem to this project. Their approach is to get the LLM to respond to the question with each context item individually, and extract keywords from the responses. The LLM then answers the question only using the keywords, and without seeing the contexts.
+
+There are two key limitations of this approach which I aim to handle in this project:
+* This approach assumes the number of poisoned context items is less than half the number of items in the context. As there is no way to limit the number of attacks in practice, this is quite a serious limitation. In this project, I do not make this assumption, and in most cases have the number of poisoned context items equal to the number of items in the context. I address the issue of many poisoned context items with a technique I call [Context Variance Encouragement](#context-variance-encouragement-cve)
+* Their approach does not account for cases where the LLM needs access to multiple context items to answer the question. More complicated answers might draw from different context items across the corpus, but since they pass the contexts one by one the RobustRAG approach cannot handle these cases. To avoid this issue, I do not isolate the context items - they are all evaluated together.
+
+
+
+### Why do we care?
+
+RAG systems are usually given access to a trusted information source of internal documents, where the risk of someone tampering with the documents is low. If someone had access to a company's internal documents, they could potentially do more damaging things than injecting false information into an LLM's corpus. It could be argued that vulnerabilities in RAG systems are not really a big concern.
+
+Whilst I think this is true, I think the RAG setting is a good problem setup for investigating the wider issue of how we can build robust LLM-based systems which have access to some external information. Many applications use e.g. [LangChain to give LLMs access to the internet](https://js.langchain.com/v0.1/docs/integrations/tools/webbrowser/).
+
+A potential danger could be a user looking up a conspiracy theory which arose after the LLM was trained. If an LLM goes to the internet to find the truth in the theory, it might not be able to know which sources it can trust, and end up parroting incorrect information.
+
+I think developers should be careful about the sources they provide to language models. However, I hope that the techniques explored in this paper would help developers to have more confidence in deploying systems, and potentially enable them to harness more varied sources which could have a lot of useful information amongst untrustworthy information (e.g. Reddit).
+
+
+
 ## Method
 
 I use the poisoned contexts generated in the PoisonedRAG paper. I only evaluate on the "nq" dataset in this project, although extension to the other datasets in the RAG paper would be simple with more time. 
