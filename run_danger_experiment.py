@@ -10,7 +10,7 @@ from src.danger_identification import identify_dangerous_async
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
 combined = True
-experiment_name = "final_35"
+experiment_name = "final_4"
 
 results_dir = EXPERIMENT_DIR / experiment_name
 
@@ -29,6 +29,7 @@ query_df = pd.DataFrame(contexts_expanded.rename("contexts"))
 query_df["question"] = question_df.loc[contexts_expanded.index.get_level_values("qid")][
     "question"
 ].to_list()
+
 
 llm = create_model(f"model_configs/{experiment_config['model']}_config.json")
 
@@ -54,7 +55,4 @@ results = pd.DataFrame(
     asyncio.run(run_all_queries(query_df, llm, combined)), index=contexts_expanded.index
 )
 
-results.to_pickle(
-    results_dir
-    / f"danger_results_{'danger_eval_pcomb' if combined else 'danger_eval_psep'}.p"
-)
+results.to_pickle(results_dir / f"danger_eval_p{'comb' if combined else 'sep'}.p")

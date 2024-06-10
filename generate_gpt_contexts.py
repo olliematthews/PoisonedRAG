@@ -4,30 +4,15 @@ import numpy as np
 import pickle
 import json
 
-experiment_name = "final_35"
-experiment_config = {
-    "context_configs": {
-        "with_reduction": (0.5, 5, 0.65),
-        "no_reduction": (0.5, 5, None),
-    },
-    "model": "gpt3.5",
-    "experiments": [
-        ("no_reduction", "original"),
-        ("no_reduction", "refined"),
-        ("no_reduction", "cot"),
-        ("with_reduction", "cot"),
-    ],
-    "do_no_context": True,
-}
+experiment_name = "final_4"
+
 
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
 
 results_dir = EXPERIMENT_DIR / experiment_name
-results_dir.mkdir(exist_ok=True, parents=True)
-
-with open(results_dir / "config.json", "w") as fd:
-    json.dump(experiment_config, fd, indent=2)
+with open(results_dir / "config.json", "r") as fd:
+    experiment_config = json.load(fd)
 
 emb_df = pd.read_pickle(CACHE_DIR / "GPT_EMBEDDING_DUMP-nq-test.p")
 qemb_df = pd.read_pickle(CACHE_DIR / "GPT_QEMBEDDING_DUMP-nq-test.p")

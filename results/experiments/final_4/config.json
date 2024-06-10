@@ -1,0 +1,38 @@
+{
+  "context_configs": {
+    "with_reduction": [
+      0.5,
+      5,
+      0.65
+    ],
+    "no_reduction": [
+      0.5,
+      5,
+      null
+    ]
+  },
+  "model": "gpt4",
+  "experiments": [
+    [
+      "no_reduction",
+      "original"
+    ],
+    [
+      "no_reduction",
+      "refined"
+    ],
+    [
+      "no_reduction",
+      "cot"
+    ],
+    [
+      "with_reduction",
+      "refined"
+    ],
+    [
+      "with_reduction",
+      "cot"
+    ]
+  ],
+  "do_no_context": true
+}
