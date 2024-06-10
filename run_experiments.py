@@ -10,7 +10,7 @@ import json
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
 
-experiment_name = "gpt_contexts_3.5"
+experiment_name = "final_35"
 results_dir = EXPERIMENT_DIR / experiment_name
 results_dir.mkdir(exist_ok=True, parents=True)
 
@@ -24,7 +24,7 @@ context_df = pd.read_pickle(results_dir / "context.p")
 
 prompt_templates = {
     prompt_type: get_prompts(prompt_type)
-    for prompt_type in experiment_config["prompt_types"]
+    for prompt_type in ["original", "refined", "cot"]
 }
 
 
@@ -38,10 +38,9 @@ def to_query_str(row, context_col, prompt_templates):
 all_queries = pd.concat(
     {
         (context, prompt_type): context_df.join(questions_df).apply(
-            to_query_str, args=(context, prompt_template), axis=1
+            to_query_str, args=(context, prompt_templates[prompt_type]), axis=1
         )
-        for context in experiment_config["context_configs"]
-        for prompt_type, prompt_template in prompt_templates.items()
+        for context, prompt_type in experiment_config["experiments"]
     }
 )
 

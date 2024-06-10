@@ -4,15 +4,20 @@ import numpy as np
 import pickle
 import json
 
-experiment_name = "gpt_contexts_35"
+experiment_name = "final_35"
 experiment_config = {
     "context_configs": {
-        "standard": (0.5, 5, 0.65),
-        "no_boi": (0.5, 5, None),
+        "with_reduction": (0.5, 5, 0.65),
+        "no_reduction": (0.5, 5, None),
     },
     "model": "gpt3.5",
-    "prompt_types": ["cot"],
-    "do_no_context": False,
+    "experiments": [
+        ("no_reduction", "original"),
+        ("no_reduction", "refined"),
+        ("no_reduction", "cot"),
+        ("with_reduction", "cot"),
+    ],
+    "do_no_context": True,
 }
 
 CACHE_DIR = Path("./.cache")

@@ -10,7 +10,7 @@ from src.danger_identification import identify_dangerous_async
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
 combined = True
-experiment_name = "gpt_contexts_35"
+experiment_name = "final_35"
 
 results_dir = EXPERIMENT_DIR / experiment_name
 
@@ -55,5 +55,6 @@ results = pd.DataFrame(
 )
 
 results.to_pickle(
-    results_dir / f"danger_results_{'combined' if combined else 'not_combined'}.p"
+    results_dir
+    / f"danger_results_{'danger_eval_pcomb' if combined else 'danger_eval_psep'}.p"
 )
