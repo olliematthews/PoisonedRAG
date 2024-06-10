@@ -10,7 +10,7 @@ from src.danger_identification import identify_dangerous_async
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
 
-experiment_name = "gpt_contexts_3.5"
+experiment_name = "gpt_contexts_35"
 
 results_dir = EXPERIMENT_DIR / experiment_name
 

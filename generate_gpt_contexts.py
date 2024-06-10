@@ -4,12 +4,10 @@ import numpy as np
 import pickle
 import json
 
-experiment_name = "gpt_contexts_3.5"
+experiment_name = "gpt_contexts_35"
 experiment_config = {
     "context_configs": {
-        "standard": (0.6, 5, 0.65),
-        "low_thresh": (0.5, 5, 0.65),
-        "high_boi": (0.5, 5, 0.75),
+        "standard": (0.5, 5, 0.65),
         "no_boi": (0.5, 5, None),
     },
     "model": "gpt3.5",
