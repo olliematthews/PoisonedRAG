@@ -10,14 +10,14 @@ from src.danger_identification import identify_dangerous_async
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
 
-experiment_name = "varying_n"
+experiment_name = "gpt_contexts_3.5"
 
 results_dir = EXPERIMENT_DIR / experiment_name
 
 with open(results_dir / "config.json", "r") as fd:
     experiment_config = json.load(fd)
 
-context_df = pd.read_pickle(results_dir / "context.p").iloc[:5]
+context_df = pd.read_pickle(results_dir / "context.p")
 
 all_queries = pd.concat({column: context_df[column] for column in context_df.columns})
 all_queries.index.names = ["Context type", "qid"]
