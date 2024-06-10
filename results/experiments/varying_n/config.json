@@ -1,0 +1,21 @@
+{
+  "context_configs": {
+    "n=2": [
+      2,
+      1,
+      true,
+      true
+    ],
+    "n=3": [
+      3,
+      1,
+      true,
+      true
+    ]
+  },
+  "model": "gpt3.5",
+  "prompt_types": [
+    "cot"
+  ],
+  "do_no_context": false
+}

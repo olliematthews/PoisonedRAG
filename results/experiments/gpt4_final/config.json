@@ -19,11 +19,12 @@
       true
     ]
   },
-  "model": "gpt3.5",
+  "model": "gpt4",
   "prompt_types": [
     "original",
     "refined",
     "cot"
   ],
   "do_no_context": true
+
 }

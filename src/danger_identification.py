@@ -1,5 +1,5 @@
 import json
-from models.embedding import get_embeddings, get_embedding_async
+from src.models.embedding import get_embeddings, get_embedding_async
 import numpy as np
 import asyncio
 from pathlib import Path
@@ -96,19 +96,48 @@ def reduce_context(contexts, question):
     return ret
 
 
-def identify_dangerous(context, question, llm, reduction_thresh=None):
-    if reduction_thresh:
-        context = reduce_context(context, question)
+def identify_dangerous(context, llm):
     prompt = PROMPT.replace("[TEXTS]", json.dumps(context, indent=4))
-    ret = llm.query(prompt)
+    response = llm.query(prompt)
     ret_split = ret.split("Answer:")
+
+    ret = {"output": response}
     if len(ret_split) == 1:
-        answer = llm.query(prompt + "\nAnswer:")
+        follow_up_prompt = prompt + response + "\nAnswer:"
+        output = llm.query(follow_up_prompt)
+        ret["follow_up_prompt"] = follow_up_prompt
+
+        ret["initial_output"] = response
+        ret["output"] = output
     elif len(ret_split) == 2:
-        answer = ret_split[1]
+        output = ret_split[1]
+        ret["output"] = output
     else:
         raise Exception("Incorrect output format!")
-    return "dangerous" in answer.lower()
+    ret["dangerous"] = "dangerous" in output.lower()
+    return ret
+
+
+async def identify_dangerous_async(context, llm):
+    prompt = PROMPT.replace("[TEXTS]", json.dumps(context, indent=4))
+    response = await llm.aquery(prompt)
+    ret_split = response.split("Answer:")
+
+    ret = {"output": response}
+    if len(ret_split) == 1:
+        follow_up_prompt = prompt + response + "\nAnswer:"
+        output = llm.query(follow_up_prompt)
+        ret["follow_up_prompt"] = follow_up_prompt
+
+        ret["initial_output"] = response
+        ret["output"] = output
+        dangerous_string = output
+    elif len(ret_split) == 2:
+        dangerous_string = ret_split[1]
+    elif len(ret_split) != 2:
+        raise Exception("Incorrect output format!")
+    ret["dangerous"] = "dangerous" in dangerous_string.lower()
+    return ret
 
 
 if __name__ == "__main__":

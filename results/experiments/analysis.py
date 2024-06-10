@@ -17,14 +17,16 @@ def is_incorrect(row):
 
 cdir = Path(__file__).parent
 
-experiment = "gpt3.5_final"
+# experiment = "gpt3.5_final"
+experiment = "varying_n"
+
 
 results_dir = cdir / experiment
 
 context_df = pd.read_pickle(results_dir / "context.p")
-outputs_df = pd.read_pickle(results_dir / "llm_outputs.p")
-questions_df = pd.read_pickle(results_dir / "questions.p")
-
+# outputs_df = pd.read_pickle(results_dir / "llm_outputs.p")
+# questions_df = pd.read_pickle(results_dir / "questions.p")
+di_df = pd.read_pickle(results_dir / "danger_results.p")
 
 results_df = pd.merge(
     outputs_df.reset_index(),

@@ -5,23 +5,27 @@ from src.prompts.prompts import wrap_prompt, get_prompts
 import asyncio
 from src.models import create_model
 import tqdm
+import json
 
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
 
-experiment_name = "gpt3.5_final"
+experiment_name = "varying_n"
 experiment_config = {
     "context_configs": {
-        "Context no poisoning": (5, 5, False, False),
-        "Context with poisoning": (5, 5, True, False),
-        "Context with poisoning and gt": (5, 5, True, True),
+        "n=2": (2, 1, True, True),
+        "n=3": (3, 1, True, True),
     },
     "model": "gpt3.5",
-    "prompt_types": ["original", "refined", "cot"],
+    "prompt_types": ["cot"],
+    "do_no_context": False,
 }
 
 results_dir = EXPERIMENT_DIR / experiment_name
 results_dir.mkdir(exist_ok=True, parents=True)
+
+with open(results_dir / "config.json", "w") as fd:
+    json.dump(experiment_config, fd, indent=2)
 
 with open(CACHE_DIR / "RETRIEVAL_DUMP-nq-test.p", "rb") as fd:
     test_cases, corpus = pickle.load(fd)
@@ -66,7 +70,7 @@ context_df = pd.concat(
     axis=1,
 )
 
-context_df.to_pickle(results_dir / "context_df.p")
+context_df.to_pickle(results_dir / "context.p")
 
 prompt_templates = {
     prompt_type: get_prompts(prompt_type)
@@ -92,31 +96,29 @@ all_queries = pd.concat(
 )
 
 
-no_context_queries = questions_df.apply(
-    to_query_str, args=(None, prompt_templates["refined"]), axis=1
-)
+if experiment_config["do_no_context"]:
+    no_context_queries = questions_df.apply(
+        to_query_str, args=(None, prompt_templates["refined"]), axis=1
+    )
 
-no_context_queries.index = pd.MultiIndex.from_tuples(
-    [("No context", "refined", qid) for qid in no_context_queries.index],
-)
+    no_context_queries.index = pd.MultiIndex.from_tuples(
+        [("No context", "refined", qid) for qid in no_context_queries.index],
+    )
 
-all_queries = pd.concat([no_context_queries, all_queries])
+    all_queries = pd.concat([no_context_queries, all_queries])
+
 all_queries.index.names = ["Context type", "Prompt type", "qid"]
 llm = create_model(f"model_configs/{experiment_config['model']}_config.json")
 
 
 async def run_all_queries(iter_results):
     sem = asyncio.Semaphore(10)
-    count = 0
-
     print("Starting queries")
 
     # prog = tqdm.tqdm(total = len(iter_results))
     async def run_query(prompt_type, query):
         ret = {}
-        nonlocal count
         async with sem:
-            count += 1
             # tqdm.
             response = await llm.aquery(query, 20)
             ret["output"] = response
