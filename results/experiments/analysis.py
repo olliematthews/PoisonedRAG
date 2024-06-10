@@ -29,6 +29,7 @@ results_dir = cdir / experiment
 
 context_df = pd.read_pickle(results_dir / "context.p")
 di_df = pd.read_pickle(results_dir / "danger_results.p")
+di_df_nc = pd.read_pickle(results_dir / "danger_results_not_combined.p")
 outputs_df = pd.read_pickle(results_dir / "llm_outputs.p")
 questions_df = pd.read_pickle(results_dir / "questions.p")
 
