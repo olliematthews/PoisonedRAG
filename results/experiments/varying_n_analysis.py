@@ -25,8 +25,10 @@ cdir = Path(__file__).parent
 
 # experiment = "gpt3.5_final"
 experiment = "varying_n"
-to_plot = {}
 
+
+dangerous_eval_plot = {}
+poisoned_plot = {}
 for experiment in ["varying_n_35", "varying_n_4"]:
     print(experiment)
     results_dir = cdir / experiment
@@ -68,68 +70,49 @@ for experiment in ["varying_n_35", "varying_n_4"]:
     print("Main results:")
     print(group_res)
 
-    to_plot[experiment] = {
-        "Evaluated Dangerous": danger_eval_grouped,
-        "Poisoned": group_res["poisoned"],
-    }
+    dangerous_eval_plot[experiment] = danger_eval_grouped
+    poisoned_plot[experiment] = group_res["poisoned"]
 
+
+# Plot dangerous eval
 fig, ax1 = plt.subplots()
-ax2 = ax1.twinx()
 
-
-def color_cycle():
-    """Generator that yields the next color in Matplotlib's default color cycle."""
-    colors = itertools.cycle(plt.rcParams["axes.prop_cycle"].by_key()["color"])
-    while True:
-        yield next(colors)
-
-
-colors = color_cycle()
-
-axis_labels = list(to_plot.keys())
 series_labels = {"varying_n_35": "gpt 3.5 turbo", "varying_n_4": "gpt 4o"}
-n_series = len(to_plot)
 
-dangerous_color = next(colors)
-poisoned_color = next(colors)
-
-linestyles = ["-", "--"]
-for (k, v), ls in zip(to_plot.items(), linestyles):
-    color = next(colors)
-
-    x = [int(i) for i in v["Evaluated Dangerous"].index]
+for experiment, plot in dangerous_eval_plot.items():
+    x = [int(i) for i in plot.index]
     ax1.plot(
         x,
-        v["Evaluated Dangerous"],
-        label=series_labels[k] + ": Dangerous Evaluation Rate",
-        color=dangerous_color,
-        linestyle=ls,
+        plot,
+        label=series_labels[experiment],
     )
 
-    x = [int(i[1]) for i in v["Poisoned"].index]
-    ax2.plot(
-        x,
-        v["Poisoned"],
-        label=series_labels[k] + ": Poisoned Rate",
-        color=poisoned_color,
-        linestyle=ls,
-    )
-ax1.set_ylabel("Dangerous Evaluation Success Rate")
-ax2.set_ylabel("Poisoned RAG Success Rate")
-
-
-def setup_axis(ax, color):
-    ax.yaxis.label.set_color(color)
-    ax.set_ylim([0, 1])
-    ax.tick_params(axis="y", colors=color)
-    # ax.spines["left"].set_color(color)
-
-
-setup_axis(ax1, dangerous_color)
-setup_axis(ax2, poisoned_color)
+ax1.set_ylabel("Danger Identification Rate")
 
 ax1.set_xlabel("Number of injected prompts")
 fig.legend()
 
 plt.tight_layout()
-plt.savefig("figures/varying_n.jpg")
+plt.savefig("figures/varying_n_dangerous_eval.jpg")
+
+
+# Plot poisoned
+fig, ax1 = plt.subplots()
+
+series_labels = {"varying_n_35": "gpt 3.5 turbo", "varying_n_4": "gpt 4o"}
+
+for experiment, plot in poisoned_plot.items():
+    x = [int(i[1]) for i in plot.index]
+    ax1.plot(
+        x,
+        plot,
+        label=series_labels[experiment],
+    )
+
+ax1.set_ylabel("Poisoned Success Rate")
+
+ax1.set_xlabel("Number of injected prompts")
+fig.legend()
+
+plt.tight_layout()
+plt.savefig("figures/varying_n_poisoned.jpg")

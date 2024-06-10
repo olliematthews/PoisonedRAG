@@ -29,8 +29,8 @@ to_plot = {
     "Original Prompt": ("original", "no_reduction", "poisoned"),
     "Refined Prompt": ("refined", "no_reduction", "poisoned"),
     "CoT Prompt": ("cot", "no_reduction", "poisoned"),
-    "CoT Prompt w/ DC": ("cot", "no_reduction", "poisoned_with_check"),
-    "CoT Prompt\nw/ DC + CR": ("cot", "with_reduction", "poisoned_with_check"),
+    "CoT Prompt w/ DE": ("cot", "no_reduction", "poisoned_with_check"),
+    "CoT Prompt\nw/ DE + CVE": ("cot", "with_reduction", "poisoned_with_check"),
     # "Refined Prompt\nw/ DC + CR": ("refined", "with_reduction", "poisoned_with_check"),
 }
 
