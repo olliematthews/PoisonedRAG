@@ -2,6 +2,7 @@
 
 This repo is an investigation of how we can defend against knowledge poisoning attacks, as described in the ["PoisonedRAG" paper](https://arxiv.org/abs/2402.07867).
 
+For instructions on how to run, [see the bottom](#how-to-run)
 
 
 ## Introduction
@@ -212,6 +213,23 @@ Some limitations remain:
 All in all, although the risk is not 0, having safety methods like these could make it much easier to deploy RAG systems in safety. Models could be exposed to more sources if there is an effective way to filter out dangerous context, leading to better knowledge responses. 
 
 A key other factor is that the sources used in answers are listed when an answer is given. This means that an LLM could give answers more like "This text from ... suggests that..." rather than giving the opinions of texts as truth.
+
+
+## How To Run
+
+* Setup environment:
+  * Setup a venv
+  * Install  poetry in the venv
+  * Run `poetry install`
+  * Make sure you have an [openai key setup](https://platform.openai.com/docs/quickstart/step-2-set-up-your-api-key)
+* Run initial setup to generate cached files for a given dataset (default is nq):
+  * Run `python run/setup/generate_datasets.py`
+  * Run `python run/setup/generate_openai_embeddings.py`
+* Create an experiment: `python run/experiments/initialise_experiment.py`
+  * Alter the generated `config.json` file (you can copy examples) from "results/eperiments"
+* Run `python run/experiments/generate_contexts.py` to run the retrieval stage. This allows you to run:
+  * Run `python run/experiments/run_llm.py` to run the llm stage
+  * Run `python run/experiments/run_danger_evaluator.py` to run the danger evaluator (requires )
 
 
 ## Acknowledgement
