@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "poisoned-rag-defense"
+version = "0.1.0"
+description = "Defenses against knowledge poisoning attacks"
+authors = ["ollie <ojmatthews7@gmail.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+beir = "^2.0.0"
+openai = "^1.33.0"
+torch = "^2.3.1"
+charset-normalizer = "^3.3.2"
+numpy = "^1.26.4"
+fschat = {extras = ["model-worker", "webui"], version = "^0.2.36"}
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

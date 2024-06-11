@@ -1,5 +1,5 @@
 import json
-from src.models.embedding import get_embeddings, get_embedding_async
+from poisoned_rag_defense.models.embedding import get_embeddings, get_embedding_async
 import numpy as np
 import asyncio
 from pathlib import Path

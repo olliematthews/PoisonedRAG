@@ -2,7 +2,7 @@ from sentence_transformers import SentenceTransformer
 import torch
 import random
 from tqdm import tqdm
-from src.utils import load_json
+from poisoned_rag_defense.utils import load_json
 import json
 import os
 

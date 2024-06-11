@@ -1,20 +1,21 @@
+"""Use the PoisonedRAG code to generate datasets to analyse"""
+
 import argparse
 import os
 import json
 import random
-
-import tqdm.asyncio
-from src.models import create_model
-from src.utils import load_beir_datasets, load_models
-from src.utils import save_results, load_json, setup_seeds, clean_str, f1_score
-from src.attack import Attacker
-from src.prompts.prompts import wrap_prompt, get_prompts
-import torch
+import sys
 from pathlib import Path
+
+main_dir_path = str(Path(__file__).parent.parent)
+if main_dir_path not in sys.path:
+    sys.path.append(main_dir_path)
+
+from poisoned_rag_defense.utils import load_beir_datasets, load_models
+from poisoned_rag_defense.utils import load_json, setup_seeds
+from poisoned_rag_defense.attack import Attacker
+import torch
 import pickle
-import asyncio
-from typing import Optional
-import tqdm
 
 
 CACHE_DIR = Path("./.cache")
@@ -37,37 +38,19 @@ def parse_args():
         help="Eval results of eval_model on the original beir eval_dataset",
     )
 
-    # LLM settings
-    parser.add_argument("--model_config_path", default=None, type=str)
-    parser.add_argument("--model_name", type=str, default="palm2")
-    parser.add_argument("--top_k", type=int, default=5)
-    parser.add_argument("--use_truth", type=str, default="False")
-    parser.add_argument("--gpu_id", type=int, default=0)
-
     # attack
+    parser.add_argument("--adv_per_query", type=int, default=5)
     parser.add_argument("--attack_method", type=str, default="LM_targeted")
-    parser.add_argument(
-        "--adv_per_query",
-        type=int,
-        default=5,
-        help="The number of adv texts for each target query.",
-    )
     parser.add_argument(
         "--score_function", type=str, default="dot", choices=["dot", "cos_sim"]
     )
     parser.add_argument(
         "--M",
         type=int,
-        default=10,
+        default=100,
         help="Number of target queries",
     )
     parser.add_argument("--seed", type=int, default=12, help="Random seed")
-    parser.add_argument(
-        "--name", type=str, default=None, help="Name of log and result."
-    )
-    parser.add_argument(
-        "--prompt", type=str, default="original", help="The prompt to use."
-    )
 
     args = parser.parse_args()
     print(args)
@@ -76,13 +59,10 @@ def parse_args():
 
 def main():
     args = parse_args()
-    # torch.cuda.set_device(args.gpu_id)
     device = "cpu"
     setup_seeds(args.seed)
-    if args.model_config_path == None:
-        args.model_config_path = f"model_configs/{args.model_name}_config.json"
 
-    cache_file = CACHE_DIR / f"{args.eval_dataset}-{args.split}.p"
+    cache_file = CACHE_DIR / f"beir_cache-{args.eval_dataset}-{args.split}.p"
     if not cache_file.exists():
         # load target queries and answers
         if args.eval_dataset == "msmarco":
@@ -205,7 +185,7 @@ def main():
         relevant_corpus.update({k: corpus[k] for k in gt_ids})
 
     with open(
-        CACHE_DIR / f"RETRIEVAL_DUMP-{args.eval_dataset}-{args.split}.p", "wb"
+        CACHE_DIR / f"poisonedrag_cache-{args.eval_dataset}-{args.split}.p", "wb"
     ) as fd:
         pickle.dump((test_cases, relevant_corpus), fd)
 

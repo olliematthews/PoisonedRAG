@@ -1,13 +1,13 @@
 import pickle
 from pathlib import Path
 import pandas as pd
-from src.prompts.prompts import wrap_prompt, get_prompts
+from poisoned_rag_defense.prompts.prompts import wrap_prompt, get_prompts
 import asyncio
-from src.models import create_model
+from poisoned_rag_defense.models import create_model
 import tqdm
 import json
 import numpy as np
-from src.models.embedding import get_embeddings
+from poisoned_rag_defense.models.embedding import get_embeddings
 
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")
@@ -20,11 +20,11 @@ results_dir.mkdir(exist_ok=True, parents=True)
 with open(results_dir / "config.json", "r") as fd:
     experiment_config = json.load(fd)
 
-with open(CACHE_DIR / "RETRIEVAL_DUMP-nq-test.p", "rb") as fd:
+with open(CACHE_DIR / "poisonedrag_cache-nq-test.p", "rb") as fd:
     test_cases, corpus = pickle.load(fd)
 
-emb_df = pd.read_pickle(CACHE_DIR / "GPT_EMBEDDING_DUMP-nq-test.p")
-qemb_df = pd.read_pickle(CACHE_DIR / "GPT_QEMBEDDING_DUMP-nq-test.p")
+emb_df = pd.read_pickle(CACHE_DIR / "gpt_corpus_embedding_cache-nq-test.p")
+qemb_df = pd.read_pickle(CACHE_DIR / "openai_question_embedding_cache-nq-test.p")
 extended_corpus_df = pd.read_pickle(CACHE_DIR / "EXTENDED_CORPUS-nq-test.p")
 
 
