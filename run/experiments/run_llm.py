@@ -56,7 +56,7 @@ def main():
 
     assert all(
         [
-            c[0] in experiment_config["context_configs"]
+            c[0] in experiment_config["retriever_configs"]
             for c in experiment_config["experiments"]
         ]
     ), "Unexpected context config"

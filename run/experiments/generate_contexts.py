@@ -100,12 +100,12 @@ def main():
         return extended_corpus_df.loc[contexts]["text"].to_list()
 
     print(
-        f"Generating context dataframe for contexts: {list(experiment_config['context_configs'].keys())}"
+        f"Generating context dataframe for contexts: {list(experiment_config['retriever_configs'].keys())}"
     )
     context_df = pd.concat(
         {
             col: questions_df.apply(get_context, args=args_, axis=1)
-            for col, args_ in experiment_config["context_configs"].items()
+            for col, args_ in experiment_config["retriever_configs"].items()
         },
         axis=1,
     )

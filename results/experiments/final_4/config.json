@@ -1,5 +1,5 @@
 {
-  "context_configs": {
+  "retriever_configs": {
     "with_reduction": [
       0.5,
       5,

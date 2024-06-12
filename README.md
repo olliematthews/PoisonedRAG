@@ -89,7 +89,7 @@ I use a separate instance of the LLM to evaluate contexts before passing them to
 
 If any of the threats are identified in the contexts, a warning would be thrown in a real RAG system, and the contexts could be evaluated by a trusted human.
 
-I investigate two types of danger evaluator:
+I investigate two types of danger evaluator: <a name="danger-eval-types"></a>
 * Combined - A single LLM call which tries to identify any threat type in the context
 * Individual - Multiple LLMs which each search for one threat type. If any of them identify a threat, the contexts are treated as dangerous
 
@@ -217,19 +217,67 @@ A key other factor is that the sources used in answers are listed when an answer
 
 ## How To Run
 
+#### Initial setup
+
+* Clone repo: `git clone https://github.com/olliematthews/poisoned-rag-defense.git`
 * Setup environment:
-  * Setup a venv
-  * Install  poetry in the venv
-  * Run `poetry install`
-  * Make sure you have an [openai key setup](https://platform.openai.com/docs/quickstart/step-2-set-up-your-api-key)
-* Run initial setup to generate cached files for a given dataset (default is nq):
-  * Run `python run/setup/generate_datasets.py`
+* `cd poisoned-rag-defense`
+* [Suggested] - Setup a venv - `python3 -m venv ./venv` (must be done with python3.10 or newer)
+  * You can activate this with `source ./venv/bin/activate` on linux. If you are using VSCode you should also set the interpreter to point to the venv 
+* `pip install poetry`
+* `poetry install`
+* Make sure you have an [openai key setup](https://platform.openai.com/docs/quickstart/step-2-set-up-your-api-key)
+
+#### Creating and running an experiment
+
+The code is set up to run configurable experiments. First you must run the "run/setup" scripts to convert the datasets into formats used in this repo. Then you can create an experiment and run through the RAG pipeline for it.
+
+##### Initial setup - must be done once for each dataset 
+
+* Create cached files for a given dataset (default is nq):
+  * Run `python run/setup/generate_datasets.py` (for available options use `--help`)
+    * This will create and cache datasets to be used in this repo from the PoinsonedRAG code
   * Run `python run/setup/generate_openai_embeddings.py`
-* Create an experiment: `python run/experiments/initialise_experiment.py`
-  * Alter the generated `config.json` file (you can copy examples) from "results/eperiments"
-* Run `python run/experiments/generate_contexts.py` to run the retrieval stage. This allows you to run:
-  * Run `python run/experiments/run_llm.py` to run the llm stage
-  * Run `python run/experiments/run_danger_evaluator.py` to run the danger evaluator (requires )
+    * This will generate the openai embeddings for the dataset and cache them
+
+##### Configuring an experiment set
+
+Create an experiment set: `python run/experiments/initialise_experiment.py --experiment_name <experiment_name>`
+* See the `--help` option for other arguments 
+* This will create: 
+  * An experiment directory at "results/experiments/<experiment_name>" to store all of the results from the experiment
+  * A config file at "results/experiments/<experiment_name>/config.json" with some default config
+You should alter the config file to configure the experiment as you want. The configuration parameters are as follows:
+
+* `dataset`: The dataset, and dataset split to use. E.g. `"nq-test"`
+* `retriever_configs`: A dictionary of configurations for different retrievers:
+  * The key is the `retriever_name` which you can define as you wish
+  * The value is the set of arguments to define the retriever
+* `model`: The model to use. This will currently only work with `gpt3.5` and `gpt4` as we make use of openai's `asyncio` api, but it could be quite easily extended to the other models by defining an `aquery` function in their model codes.
+* `experiments`: A list of the experiments to run. An experiment is defined by a `[<retriever_name>, <prompt_method>]` pair.
+  * The retriever_name must match one of the keys in the `retriever_configs`
+  * The prompt method must be one of `"original"`, `"refined"` or `"cot"`
+  * E.g. `[["standard", "cot"]]`,
+* `do_no_context`: If true, an experiment is added which has no context passed into the model, with a slightly altered `"refined"` prompt
+
+##### Running the experiment
+
+The experiment is run in three stages, corresponding to the "retriever", "danger evaluator" and "llm" in the RAG system.
+
+* Run the retriever with `python run/experiments/run_retriever.py`
+  * This generates datasets called `context.p` and `questions.p` 
+    * `context.p` is the set of contexts retrieved by each retriever defined in the config
+    * `questions.p` is the set of questions to run
+  * **This must be run before either of the other stages**
+* Run `python run/experiments/run_danger_evaluator.py [--combined]` to run the danger evaluator
+  * This generates `danger_eval_p<comb/sep>.p` which contains the evaluator's predictions for which contexts are dangerous
+  * The defaults to using [individual evaluators](#danger-eval-types) but if you specify `--combined` it will use a combined evaluator (this makes less llm calls)
+* Run the llm with `python run/experiments/run_llm.py`
+  * This generates `llm_outputs.p` which contains the outputs to the questions for each defined retriever and query type pair
+
+##### Analysing the experiment results
+
+I leave it up to whoever is running the experiments to analyse the results, but there are some example scripts in "results/experiments/analysis.py".
 
 
 ## Acknowledgement

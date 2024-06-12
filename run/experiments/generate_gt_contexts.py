@@ -63,7 +63,7 @@ questions_df.to_pickle(results_dir / "questions.p")
 context_df = pd.concat(
     {
         col: questions_df.apply(get_context, args=args_, axis=1)
-        for col, args_ in experiment_config["context_configs"].items()
+        for col, args_ in experiment_config["retriever_configs"].items()
     },
     axis=1,
 )

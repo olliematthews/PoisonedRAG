@@ -37,9 +37,9 @@ def main():
 
     config = {
         "dataset": dataset_split_string,
-        "context_configs": {"standard": [0.5, 5, 0.65]},
+        "retriever_configs": {"standard": [0.5, 5, 0.65]},
         "model": args.model,
-        "experiments": [],
+        "experiments": [["standard", "cot"]],
         "do_no_context": True,
     }
 
