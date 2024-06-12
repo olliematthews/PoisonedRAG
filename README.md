@@ -89,7 +89,8 @@ I use a separate instance of the LLM to evaluate contexts before passing them to
 
 If any of the threats are identified in the contexts, a warning would be thrown in a real RAG system, and the contexts could be evaluated by a trusted human.
 
-I investigate two types of danger evaluator: <a name="danger-eval-types"></a>
+<a name="danger-eval-types"></a>
+I investigate two types of danger evaluator: 
 * Combined - A single LLM call which tries to identify any threat type in the context
 * Individual - Multiple LLMs which each search for one threat type. If any of them identify a threat, the contexts are treated as dangerous
 
@@ -242,7 +243,7 @@ The code is set up to run configurable experiments. First you must run the "run/
 
 ##### Configuring an experiment set
 
-Create an experiment set: `python run/experiments/initialise_experiment.py --experiment_name <experiment_name>`
+Create an experiment set: `python run/experiments/initialise_experiment_set.py --experiment_name <experiment_name>`
 * See the `--help` option for other arguments 
 * This will create: 
   * An experiment directory at "results/experiments/<experiment_name>" to store all of the results from the experiment
@@ -252,13 +253,27 @@ You should alter the config file to configure the experiment as you want. The co
 * `dataset`: The dataset, and dataset split to use. E.g. `"nq-test"`
 * `retriever_configs`: A dictionary of configurations for different retrievers:
   * The key is the `retriever_name` which you can define as you wish
-  * The value is the set of arguments to define the retriever
+  * The value is `(<retriever_type>, <retriever_kwargs>)`
+    * The `<retriever_type>` can be `gt`, `openai` or `contriever`:
+      * `gt` is the ground truth retriever
+        * This will retrieve the ground truth contexts for that question
+        * You must also define `n_poison`, the number of poisoned contexts
+        * You can define `similarity_rej_thresh` to [set the threshold for CVE](#context-variance-encouragement-cve)
+      * `openai` uses openai embeddings
+        * You must define `accept_thresh` - the cosine similarity of a context to the question to accept it
+        * You must define `n_contexts` - the limit of number of contexts to include
+        * You can define `n_poison` to limit the number of poisoned contexts
+        * You can define `similarity_rej_thresh` to [set the threshold for CVE](#context-variance-encouragement-cve)
+      * `contriever` uses the contriever embeddings from the PoisonedRAG code
+        * You must define `n_contexts` - the limit of number of contexts to include
+        * You can define `n_poison` to limit the number of poisoned contexts
 * `model`: The model to use. This will currently only work with `gpt3.5` and `gpt4` as we make use of openai's `asyncio` api, but it could be quite easily extended to the other models by defining an `aquery` function in their model codes.
 * `experiments`: A list of the experiments to run. An experiment is defined by a `[<retriever_name>, <prompt_method>]` pair.
   * The retriever_name must match one of the keys in the `retriever_configs`
   * The prompt method must be one of `"original"`, `"refined"` or `"cot"`
   * E.g. `[["standard", "cot"]]`,
 * `do_no_context`: If true, an experiment is added which has no context passed into the model, with a slightly altered `"refined"` prompt
+* `n_questions`: Can be added to reduce the number of questions to evaluate over (if this is None, the maximum of 100 questions is used)
 
 ##### Running the experiment
 

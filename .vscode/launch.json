@@ -33,7 +33,7 @@
             "program": "${file}",
             "console": "integratedTerminal",
             "args": [
-                "--experiment_name", "boi"
+                "--experiment_name", "varying_n_35"
             ]
         }
 

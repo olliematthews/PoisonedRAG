@@ -1,14 +1,18 @@
 {
+  "dataset": "nq-test",
   "retriever_configs": {
     "with_reduction": [
-      0.5,
-      5,
-      0.65
+      "openai", {
+        "n_contexts": 5,
+        "accept_thresh": 0.5,
+        "similarity_rej_thresh": 0.65
+      }
     ],
     "no_reduction": [
-      0.5,
-      5,
-      null
+      "openai", {
+        "n_contexts": 5,
+        "accept_thresh": 0.5
+      }
     ]
   },
   "model": "gpt3.5",

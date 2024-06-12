@@ -41,6 +41,7 @@ def main():
         "model": args.model,
         "experiments": [["standard", "cot"]],
         "do_no_context": True,
+        "n_question": None,
     }
 
     with open(results_dir / "config.json", "w") as fd:

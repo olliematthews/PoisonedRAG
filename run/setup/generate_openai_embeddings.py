@@ -71,7 +71,9 @@ def main():
 
     emb_df = pd.concat(emb_sub_dfs)
 
-    emb_df.to_pickle(CACHE_DIR / f"gpt_corpus_embedding_cache-{dataset_split_string}.p")
+    emb_df.to_pickle(
+        CACHE_DIR / f"openai_corpus_embedding_cache-{dataset_split_string}.p"
+    )
 
     questions = test_case_df["question"].to_list()
 

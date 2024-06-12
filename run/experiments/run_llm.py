@@ -32,7 +32,7 @@ def main():
             experiment_config = json.load(fd)
     except FileNotFoundError as e:
         raise Exception(
-            f"Unable to find config for experiment {args.experiment_name}. Have you run 'initialise_experiment.py' for that experiment?"
+            f"Unable to find config for experiment {args.experiment_name}. Have you run 'initialise_experiment_set.py' for that experiment?"
         ) from e
 
     try:
@@ -40,7 +40,7 @@ def main():
         context_df = pd.read_pickle(results_dir / "context.p")
     except FileNotFoundError as e:
         raise Exception(
-            f"Unable to find question and context dfs for experiment {args.experiment_name}. Have you run 'generate_contexts.py' for that experiment?"
+            f"Unable to find question and context dfs for experiment {args.experiment_name}. Have you run 'run_retriever.py' for that experiment?"
         ) from e
 
     prompt_templates = {

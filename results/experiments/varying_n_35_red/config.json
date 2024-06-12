@@ -1,22 +1,23 @@
 {
+  "dataset": "nq-test",
   "retriever_configs": {
     "0": [
-      0, 0.65
+      "gt", {"n_poison": 0, "similarity_rej_thresh": 0.65}
     ],
     "1": [
-      1, 0.65
+      "gt", {"n_poison": 1, "similarity_rej_thresh": 0.65}
     ],
     "2": [
-      2, 0.65
+      "gt", {"n_poison": 2, "similarity_rej_thresh": 0.65}
     ],
     "3": [
-      3, 0.65
+      "gt", {"n_poison": 3, "similarity_rej_thresh": 0.65}
     ],
     "4": [
-      4, 0.65
+      "gt", {"n_poison": 4, "similarity_rej_thresh": 0.65}
     ],
     "5": [
-      5, 0.65
+      "gt", {"n_poison": 5, "similarity_rej_thresh": 0.65}
     ]
   },
   "model": "gpt3.5",

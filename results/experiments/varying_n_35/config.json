@@ -1,22 +1,23 @@
 {
+  "dataset": "nq-test",
   "retriever_configs": {
     "0": [
-      0
+      "gt", {"n_poison": 0}
     ],
     "1": [
-      1
+      "gt", {"n_poison": 1}
     ],
     "2": [
-      2
+      "gt", {"n_poison": 2}
     ],
     "3": [
-      3
+      "gt", {"n_poison": 3}
     ],
     "4": [
-      4
+      "gt", {"n_poison": 4}
     ],
     "5": [
-      5
+      "gt", {"n_poison": 5}
     ]
   },
   "model": "gpt3.5",
