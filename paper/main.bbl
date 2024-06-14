@@ -1,0 +1,16 @@
+\begin{thebibliography}{1}
+
+\bibitem{greshake2023youve}
+Kai Greshake, Sahar Abdelnabi, Shailesh Mishra, Christoph Endres, Thorsten Holz, and Mario Fritz.
+\newblock Not what you've signed up for: Compromising real-world llm-integrated applications with indirect prompt injection, 2023.
+
+\bibitem{DBLP:journals/corr/abs-2201-11903}
+Jason Wei, Xuezhi Wang, Dale Schuurmans, Maarten Bosma, Ed~H. Chi, Quoc Le, and Denny Zhou.
+\newblock Chain of thought prompting elicits reasoning in large language models.
+\newblock {\em CoRR}, abs/2201.11903, 2022.
+
+\bibitem{zou2024poisonedrag}
+Wei Zou, Runpeng Geng, Binghui Wang, and Jinyuan Jia.
+\newblock Poisonedrag: Knowledge poisoning attacks to retrieval-augmented generation of large language models, 2024.
+
+\end{thebibliography}
