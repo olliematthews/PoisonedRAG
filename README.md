@@ -292,7 +292,8 @@ The experiment is run in three stages, corresponding to the "retriever", "danger
 
 ##### Analysing the experiment results
 
-I leave it up to whoever is running the experiments to analyse the results, but there are some example scripts in "results/experiments/analysis.py".
+There is some code in "run/analysis" to analyse experiment results. 
+Both files in there will run to generate the graphs shown in this README.
 
 
 ## Acknowledgement
