@@ -1,7 +1,6 @@
 import json
 
 from ..models import GPT
-from ..utils import run_cot_query_with_reprompt
 from .combined_prompts import PROMPTS as COMBINED_PROMPTS
 from .separate_prompts import PROMPTS as SEPARATE_PROMPTS
 
@@ -34,7 +33,7 @@ async def identify_dangerous_async(
             "[TEXTS]", json.dumps(contexts, indent=4)
         ).replace("[QUESTION]", question)
 
-        ret = await run_cot_query_with_reprompt(prompt, llm, 10)
+        ret = await llm.aquery_cot_with_reprompt(prompt, 10)
 
         # We just look for the word 'dangerous' in the response
         dangerous |= "dangerous" in ret["output"].lower()

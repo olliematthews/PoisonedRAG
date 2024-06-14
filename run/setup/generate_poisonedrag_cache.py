@@ -14,14 +14,9 @@ main_dir_path = str(Path(__file__).parent.parent.parent)
 if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
-from poisoned_rag_defense.attack import Attacker
-from poisoned_rag_defense.logger import logger
-from poisoned_rag_defense.utils import (
-    load_beir_datasets,
-    load_json,
-    load_models,
-    setup_seeds,
-)
+from poisoned_rag.attack import Attacker
+from poisoned_rag.utils import load_beir_datasets, load_json, load_models, setup_seeds
+from poisoned_rag_defence.logger import logger
 
 CACHE_DIR = Path("./.cache")
 CACHE_DIR.mkdir(exist_ok=True)
@@ -71,9 +66,8 @@ def main():
     if not cache_file.exists():
         # load target queries and answers
         if args.eval_dataset == "msmarco":
-            corpus, _, qrels = load_beir_datasets("msmarco", "train")
-        else:
-            corpus, _, qrels = load_beir_datasets(args.eval_dataset, args.split)
+            assert args.split == "train", "PoisonedRAG requires train split on msmarco"
+        corpus, _, qrels = load_beir_datasets(args.eval_dataset, args.split)
         with open(cache_file, "wb") as fd:
             pickle.dump((corpus, qrels), fd)
         logger.info(f"Saving beir cache to {cache_file}")
@@ -108,7 +102,7 @@ def main():
     with open(args.orig_beir_results, "r") as f:
         results = json.load(f)
 
-    logger.info("Total samples:", len(results))
+    logger.info(f"Total samples: {len(results)}")
 
     # Load retrieval models
     model, c_model, tokenizer, get_emb = load_models(args.eval_model_code)

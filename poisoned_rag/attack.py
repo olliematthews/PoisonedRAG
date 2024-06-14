@@ -6,7 +6,7 @@ import torch
 from sentence_transformers import SentenceTransformer
 from tqdm import tqdm
 
-from poisoned_rag_defense.utils import load_json
+from .utils import load_json
 
 
 class GradientStorage:

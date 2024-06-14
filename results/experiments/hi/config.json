@@ -1,0 +1,22 @@
+{
+  "dataset": "nq-test",
+  "retriever_configs": {
+    "standard": [
+      "openai",
+      {
+        "n_contexts": 5,
+        "accept_thresh": 0.5,
+        "similarity_rej_thresh": 0.65
+      }
+    ]
+  },
+  "model": "gpt4",
+  "experiments": [
+    [
+      "standard",
+      "cot"
+    ]
+  ],
+  "do_no_context": true,
+  "n_questions": null
+}

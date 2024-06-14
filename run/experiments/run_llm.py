@@ -9,15 +9,22 @@ main_dir_path = str(Path(__file__).parent.parent.parent)
 if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
-from poisoned_rag_defense.logger import logger
-from poisoned_rag_defense.models import create_model
-from poisoned_rag_defense.prompts.prompts import PROMPT_TEMPLATES, wrap_prompt
-from poisoned_rag_defense.utils import run_cot_query_with_reprompt
+from poisoned_rag_defence.logger import logger
+from poisoned_rag_defence.models import create_model
+from poisoned_rag_defence.prompts.prompts import wrap_prompt
 from run.experiments.experiment import Experiment
 from run.experiments.utils import experiment_name_parse_args
 
 
-def main():
+def run_llm():
+    """Runs the llm part of the pipeline.
+
+    Must be run after the retriever.
+    Uses the `experiments` part of the experiment config to run the LLM over each
+    question for each combination of retriever and LLM prompt.
+
+    Saves the results to an llm_outputs dataframe.
+    """
     args = experiment_name_parse_args()
 
     experiment = Experiment(args.experiment_name)
@@ -66,10 +73,9 @@ def main():
         logger.info("Starting queries")
 
         async def run_query(prompt_type, query):
-            ret = {}
             async with sem:
                 return (
-                    await run_cot_query_with_reprompt(query, llm, 20)
+                    await llm.aquery_cot_with_reprompt(query, 20)
                     if prompt_type == "cot"
                     else {"output": await llm.aquery(query, 20)}
                 )
@@ -91,4 +97,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_llm()

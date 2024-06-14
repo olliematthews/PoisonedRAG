@@ -13,8 +13,8 @@ main_dir_path = str(Path(__file__).parent.parent.parent)
 if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
-from poisoned_rag_defense.logger import logger
-from poisoned_rag_defense.models.embedding import get_openai_embeddings
+from poisoned_rag.models.embedding import get_openai_embeddings
+from poisoned_rag_defence.logger import logger
 
 
 def parse_args():
@@ -29,6 +29,8 @@ def parse_args():
     )
 
     args = parser.parse_args()
+    if args.eval_dataset == "msmarco":
+        assert args.split == "train", "PoisonedRAG requires train split on msmarco"
     logger.debug(str(args))
     return args
 

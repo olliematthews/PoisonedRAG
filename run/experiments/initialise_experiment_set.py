@@ -9,7 +9,7 @@ main_dir_path = str(Path(__file__).parent.parent.parent)
 if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
-from poisoned_rag_defense.logger import logger
+from poisoned_rag_defence.logger import logger
 from run.experiments.experiment import Experiment
 
 
@@ -21,9 +21,14 @@ def parse_args():
     parser.add_argument(
         "--eval_dataset", type=str, default="nq", help="BEIR dataset to evaluate"
     )
-    parser.add_argument("--split", type=str, default="test")
+    parser.add_argument(
+        "--split", type=str, default="test", help="The split on the BEIR dataset to use"
+    )
 
     args = parser.parse_args()
+
+    if args.eval_dataset == "msmarco":
+        assert args.split == "train", "PoisonedRAG requires train split on msmarco"
     print(args)
 
     return args

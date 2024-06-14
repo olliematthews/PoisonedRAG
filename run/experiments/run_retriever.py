@@ -11,7 +11,10 @@ main_dir_path = str(Path(__file__).parent.parent.parent)
 if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
-from poisoned_rag_defense.logger import logger
+from poisoned_rag_defence.context_variance_encouragement import (
+    context_variance_encouragement,
+)
+from poisoned_rag_defence.logger import logger
 from run.experiments.experiment import Experiment
 from run.experiments.utils import experiment_name_parse_args
 
@@ -50,36 +53,29 @@ def get_context_openai_factory(experiment: Experiment):
         relevant["relevance"] = cos_sim[cos_sim > accept_thresh]
         relevant = relevant.sort_values(by="relevance", ascending=False)
 
-        contexts = []
-        embeddings = []
-        n_attacks = 0
-        for qid, c in relevant.iterrows():
-            # Check if we have reached the limit of poisoned items to add in
-            if n_poison is not None and qid.startswith("attack_"):
-                if n_attacks >= n_poison:
-                    continue
-                n_poison += 1
+        relevant_embeddings = relevant["gpt_embedding"]
+        if n_poison is not None:
+            # Drop any extra poisoned contexts
+            to_drop = []
 
-            if similarity_rej_thresh is not None:
-                # Do context variance encouragement
-                emb = np.array(c["gpt_embedding"])
-                # Get the context embedding relative to the question
-                emb_rel = emb - question_embedding
-                emb_rel_norm = emb_rel / np.linalg.norm(emb_rel)
-                # Check the relative embedding is not too close to existing contexts
-                if not any(
-                    [
-                        np.dot(emb_rel_norm, e) > similarity_rej_thresh
-                        for e in embeddings
-                    ]
-                ):
-                    contexts.append(qid)
-                    embeddings.append(emb_rel_norm)
-            else:
-                contexts.append(qid)
+            n_attacks = 0
+            for qid in relevant_embeddings.index:
+                if qid.startswith("attack_"):
+                    if n_attacks >= n_poison:
+                        to_drop.append(qid)
+                    n_attacks += 1
+            relevant_embeddings.drop(to_drop, inplace=True)
 
-            if len(contexts) >= n_contexts:
-                break
+        if similarity_rej_thresh is not None:
+            contexts = context_variance_encouragement(
+                relevant_embeddings,
+                question_embedding,
+                similarity_rej_thresh,
+                n_contexts,
+            )
+        else:
+            contexts = relevant_embeddings.index
+
         return experiment.extended_corpus_df.loc[contexts]["text"].to_list()
 
     return get_context
@@ -151,24 +147,13 @@ def get_context_gt_factory(experiment):
         cos_sim_series = pd.Series(cos_sim, index=attack_corpus_embedding_df.index)
         cos_sim_series = cos_sim_series.sort_values(ascending=False)[:n_poison]
 
+        attack_embeddings = attack_corpus_embedding_df.loc[cos_sim_series.index][
+            "gpt_embedding"
+        ]
         if similarity_rej_thresh is not None:
-            # Do context variance encouragement
-            attack_contexts = []
-            embeddings = []
-            for cid in cos_sim_series.index:
-                emb = attack_corpus_embedding_df.loc[cid]["gpt_embedding"]
-                # Get the context embedding relative to the question
-                emb_rel = emb - question_embedding
-                emb_rel_norm = emb_rel / np.linalg.norm(emb_rel)
-                # Check the relative embedding is not too close to existing contexts
-                if not any(
-                    [
-                        np.dot(emb_rel_norm, e) > similarity_rej_thresh
-                        for e in embeddings
-                    ]
-                ):
-                    attack_contexts.append(cid)
-                    embeddings.append(emb_rel_norm)
+            attack_contexts = context_variance_encouragement(
+                attack_embeddings, question_embedding, similarity_rej_thresh, n_poison
+            )
         else:
             attack_contexts = cos_sim_series.index.to_list()
 
@@ -179,11 +164,19 @@ def get_context_gt_factory(experiment):
     return get_context
 
 
-def main():
+def run_retriever():
+    """Run the retriever part of the RAG pipeline.
+
+    This uses the retriever_configs part of the experiment config to define different retrievers.
+    Each retriever generates a list of relevant text items in the context for each question.
+
+    Saves the generated context dataframe as well as a dataframe of questions.
+    """
     args = experiment_name_parse_args()
 
     experiment = Experiment(args.experiment_name)
 
+    # Optional limit on the number of questions to test with
     if (n_questions := experiment.config.get("n_questions")) is not None:
         test_cases = experiment.test_cases[:n_questions]
     else:
@@ -229,4 +222,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_retriever()

@@ -11,11 +11,11 @@ main_dir_path = str(Path(__file__).parent.parent.parent)
 if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
-from poisoned_rag_defense.danger_evaluation.danger_evaluation import (
+from poisoned_rag_defence.danger_evaluation.danger_evaluation import (
     identify_dangerous_async,
 )
-from poisoned_rag_defense.logger import logger
-from poisoned_rag_defense.models import create_model
+from poisoned_rag_defence.logger import logger
+from poisoned_rag_defence.models import create_model
 from run.experiments.experiment import Experiment
 
 
@@ -36,7 +36,25 @@ def parse_args():
     return args
 
 
-def main():
+def run_danger_evaluator():
+    """ "Runs the danger evaluator part of the pipeline.
+
+    Must be run after the retriever.
+    This evaluates each list of context items to see if there is any danger.
+    Can be run in "combined" or "seperate" mode:
+    * In combined mode, a single llm instance evaluates all of the contexts
+      together for a number of threats
+    * In seperate mode, an llm call is made per threat and the outputs are
+      aggregated
+
+    The threats we evaluate for in a set of contexts are:
+    * Contradictions between contexts
+    * False contexts
+    * Hypothetical situations (in an alternate universe...)
+    * Prompt injections (ignore previous instructions...)
+
+    If any threat is discovered, the contexts are dangerous
+    """
     args = parse_args()
 
     experiment = Experiment(args.experiment_name)
@@ -79,4 +97,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    run_danger_evaluator()
