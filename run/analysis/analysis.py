@@ -1,13 +1,7 @@
-import sys
 from collections import defaultdict
-from pathlib import Path
 
 import matplotlib.pyplot as plt
 import pandas as pd
-
-main_dir_path = str(Path(__file__).parent.parent.parent)
-if main_dir_path not in sys.path:
-    sys.path.append(main_dir_path)
 
 from run.analysis.utils import get_grouped_results
 from run.experiments.experiment import Experiment

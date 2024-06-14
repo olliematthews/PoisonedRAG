@@ -2,16 +2,11 @@
 
 import argparse
 import pickle
-import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import tqdm
-
-main_dir_path = str(Path(__file__).parent.parent.parent)
-if main_dir_path not in sys.path:
-    sys.path.append(main_dir_path)
 
 from poisoned_rag.models.embedding import get_openai_embeddings
 from poisoned_rag_defence.logger import logger

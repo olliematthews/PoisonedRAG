@@ -1,13 +1,7 @@
 import asyncio
-import sys
-from pathlib import Path
 
 import pandas as pd
 import tqdm.asyncio
-
-main_dir_path = str(Path(__file__).parent.parent.parent)
-if main_dir_path not in sys.path:
-    sys.path.append(main_dir_path)
 
 from poisoned_rag_defence.logger import logger
 from poisoned_rag_defence.models import create_model

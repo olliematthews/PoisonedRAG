@@ -5,14 +5,9 @@ import json
 import os
 import pickle
 import random
-import sys
 from pathlib import Path
 
 import torch
-
-main_dir_path = str(Path(__file__).parent.parent.parent)
-if main_dir_path not in sys.path:
-    sys.path.append(main_dir_path)
 
 from poisoned_rag.attack import Attacker
 from poisoned_rag.utils import load_beir_datasets, load_json, load_models, setup_seeds

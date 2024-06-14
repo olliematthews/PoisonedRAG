@@ -1,15 +1,9 @@
 """Generate a dataset of questions, and related contexts. This is the retrieval stage of the RAG pipeline."""
 
-import sys
-from pathlib import Path
 from typing import Optional
 
 import numpy as np
 import pandas as pd
-
-main_dir_path = str(Path(__file__).parent.parent.parent)
-if main_dir_path not in sys.path:
-    sys.path.append(main_dir_path)
 
 from poisoned_rag_defence.context_variance_encouragement import (
     context_variance_encouragement,
