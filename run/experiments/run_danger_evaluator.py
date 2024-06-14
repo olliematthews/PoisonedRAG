@@ -1,11 +1,25 @@
-from pathlib import Path
-import pandas as pd
-import asyncio
-from poisoned_rag_defense.models import create_model
-import tqdm.asyncio
-import json
-from poisoned_rag_defense.danger_identification import identify_dangerous_async
 import argparse
+import asyncio
+import json
+import sys
+from pathlib import Path
+
+import pandas as pd
+import tqdm.asyncio
+
+main_dir_path = str(Path(__file__).parent.parent.parent)
+if main_dir_path not in sys.path:
+    sys.path.append(main_dir_path)
+
+from poisoned_rag_defense.danger_identification.danger_identification import (
+    identify_dangerous_async,
+)
+from poisoned_rag_defense.models import create_model
+from run.experiments.utils import (
+    load_experiment_config,
+    load_questions_context,
+    save_df,
+)
 
 
 def parse_args():
@@ -28,26 +42,10 @@ def parse_args():
 def main():
     args = parse_args()
 
-    EXPERIMENT_DIR = Path("./results/experiments")
-
-    results_dir = EXPERIMENT_DIR / args.experiment_name
     combined = args.combined
 
-    try:
-        with open(results_dir / "config.json", "r") as fd:
-            experiment_config = json.load(fd)
-    except FileNotFoundError as e:
-        raise Exception(
-            f"Unable to find config for experiment {args.experiment_name}. Have you run 'initialise_experiment_set.py' for that experiment?"
-        ) from e
-
-    try:
-        question_df = pd.read_pickle(results_dir / "questions.p")
-        context_df = pd.read_pickle(results_dir / "context.p")
-    except FileNotFoundError as e:
-        raise Exception(
-            f"Unable to find question and context dfs for experiment {args.experiment_name}. Have you run 'run_retriever.py' for that experiment?"
-        ) from e
+    experiment_config = load_experiment_config(args.experiment_name)
+    question_df, context_df = load_questions_context(args.experiment_name)
 
     contexts_expanded = pd.concat(
         {column: context_df[column] for column in context_df.columns}
@@ -65,14 +63,12 @@ def main():
         sem = asyncio.Semaphore(10)
         print("Starting queries")
 
-        # prog = tqdm.tqdm(total = len(iter_results))
         async def run_query(row):
             async with sem:
                 return await identify_dangerous_async(
                     row["contexts"], row["question"], llm, use_combined
                 )
 
-        # tqdm.asyncio.gather
         return await tqdm.asyncio.tqdm_asyncio.gather(
             *[run_query(row) for _, row in query_df.iterrows()]
         )
@@ -82,7 +78,9 @@ def main():
         index=contexts_expanded.index,
     )
 
-    results.to_pickle(results_dir / f"danger_eval_p{'comb' if combined else 'sep'}.p")
+    save_df(
+        results, args.experiment_name, f"danger_eval_p{'comb' if combined else 'sep'}.p"
+    )
 
 
 if __name__ == "__main__":

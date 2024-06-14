@@ -1,22 +1,26 @@
 """Use the PoisonedRAG code to generate datasets to analyse"""
 
 import argparse
-import os
 import json
+import os
+import pickle
 import random
 import sys
 from pathlib import Path
 
-main_dir_path = str(Path(__file__).parent.parent)
+import torch
+
+main_dir_path = str(Path(__file__).parent.parent.parent)
 if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
-from poisoned_rag_defense.utils import load_beir_datasets, load_models
-from poisoned_rag_defense.utils import load_json, setup_seeds
 from poisoned_rag_defense.attack import Attacker
-import torch
-import pickle
-
+from poisoned_rag_defense.utils import (
+    load_beir_datasets,
+    load_json,
+    load_models,
+    setup_seeds,
+)
 
 CACHE_DIR = Path("./.cache")
 CACHE_DIR.mkdir(exist_ok=True)

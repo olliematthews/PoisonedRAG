@@ -1,27 +1,31 @@
 from . import prompt_cot, prompt_original, prompt_refined
 
+PROMPT_TEMPLATES = {
+    "original": {
+        "context": prompt_original.PROMPT_W_CONTEXT,
+        "no context": prompt_original.PROMPT_WO_CONTEXT,
+    },
+    "refined": {
+        "context": prompt_refined.PROMPT_W_CONTEXT,
+        "no context": prompt_refined.PROMPT_WO_CONTEXT,
+    },
+    "cot": {
+        "context": prompt_cot.PROMPT_W_CONTEXT,
+        "no context": prompt_cot.PROMPT_WO_CONTEXT,
+    },
+}
 
-def get_prompts(prompt: str):
-    match prompt:
-        case "original":
-            context_prompt = prompt_original.PROMPT_W_CONTEXT
-            no_context_prompt = prompt_original.PROMPT_WO_CONTEXT
-        case "refined":
-            context_prompt = prompt_refined.PROMPT_W_CONTEXT
-            no_context_prompt = prompt_refined.PROMPT_WO_CONTEXT
-        case "cot":
-            context_prompt = prompt_cot.PROMPT_W_CONTEXT
-            no_context_prompt = prompt_cot.PROMPT_WO_CONTEXT
-    return {"context": context_prompt, "no context": no_context_prompt}
 
-
-def wrap_prompt(question, context, prompts) -> str:
-
+def wrap_prompt(question, context, prompt_type) -> str:
     if context is None:
-        return prompts["no context"].replace("[question]", question)
+        return PROMPT_TEMPLATES[prompt_type]["no context"].replace(
+            "[question]", question
+        )
     if isinstance(context, list):
         context = "\n".join(context)
 
     return (
-        prompts["context"].replace("[question]", question).replace("[context]", context)
+        PROMPT_TEMPLATES[prompt_type]["context"]
+        .replace("[question]", question)
+        .replace("[context]", context)
     )

@@ -20,16 +20,8 @@ def create_model(config_path):
     config = load_json(config_path)
 
     provider = config["model_info"]["provider"].lower()
-    if provider == "palm2":
-        model = PaLM2(config)
-    elif provider == "vicuna":
-        model = Vicuna(config)
-    elif provider == "gpt":
+    if provider == "gpt":
         model = GPT(config)
-    elif provider == "llama":
-        model = Llama(config)
-    elif provider == "llama_quant":
-        model = LlamaQuant(config)
     else:
-        raise ValueError(f"ERROR: Unknown provider {provider}")
+        raise ValueError(f"ERROR: Unsupported provider {provider}")
     return model

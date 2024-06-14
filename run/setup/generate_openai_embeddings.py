@@ -1,13 +1,19 @@
 """Generate the GPT embeddings for all of the corpus provided. These are cached for use in other files."""
 
-import pickle
-from pathlib import Path
-import pandas as pd
-from poisoned_rag_defense.models.embedding import get_embeddings
-import tqdm
-import numpy as np
-import tqdm
 import argparse
+import pickle
+import sys
+from pathlib import Path
+
+import numpy as np
+import pandas as pd
+import tqdm
+
+main_dir_path = str(Path(__file__).parent.parent.parent)
+if main_dir_path not in sys.path:
+    sys.path.append(main_dir_path)
+
+from poisoned_rag_defense.models.embedding import get_embeddings
 
 
 def parse_args():

@@ -1,8 +1,8 @@
 """Initialise a new experiment folder."""
 
 import argparse
-from pathlib import Path
 import json
+from pathlib import Path
 
 
 def parse_args():

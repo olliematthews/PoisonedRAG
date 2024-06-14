@@ -1,12 +1,13 @@
 """Generate a dataset of questions, and related contexts. This is the retrieval stage of the RAG pipeline."""
 
-import pandas as pd
-from pathlib import Path
-import numpy as np
-import pickle
-import json
 import argparse
+import json
+import pickle
+from pathlib import Path
 from typing import Optional
+
+import numpy as np
+import pandas as pd
 
 CACHE_DIR = Path("./.cache")
 EXPERIMENT_DIR = Path("./results/experiments")

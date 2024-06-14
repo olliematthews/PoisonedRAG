@@ -10,7 +10,7 @@ import torch
 from transformers import AutoTokenizer
 from pathlib import Path
 from sentence_transformers import SentenceTransformer
-
+from .models import GPT
 
 base_experiment_dir = Path("results", "experiments")
 base_experiment_dir.mkdir(exist_ok=True)
@@ -181,3 +181,36 @@ def f1_score(precision, recall):
     )
 
     return f1_scores
+
+
+async def run_cot_query_with_reprompt(
+    prompt: str, llm: GPT, llm_backoff: int
+) -> dict[str, any]:
+    """Run a CoT query, and reprompt the llm if it does not include the answer.
+
+    Args:
+        prompt (str): _description_
+        llm (GPT): _description_
+        llm_backoff (int): _description_
+
+    Returns:
+        dict[str, any]: _description_
+    """
+    response = await llm.aquery(prompt, llm_backoff)
+
+    ret = {"prompt": prompt, "initial_response": response}
+    ret_split = response.split("Answer:")
+    if len(ret_split) == 1:
+        # The LLM did not reply with an answer - reprompt it
+        follow_up_prompt = prompt + response + "\nAnswer:"
+        ret["follow_up_prompt"] = follow_up_prompt
+        output = await llm.aquery(follow_up_prompt)
+
+        ret["output"] = output
+    elif len(ret_split) == 2:
+        # Answer was in the correct format. Just return the result
+        ret["output"] = ret_split[1]
+    elif len(ret_split) != 2:
+        print(f"Incorrect response format!!! Got {response}")
+        ret["output"] = ""
+    return ret

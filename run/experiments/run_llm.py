@@ -1,11 +1,23 @@
-from pathlib import Path
-import pandas as pd
-from poisoned_rag_defense.prompts.prompts import wrap_prompt, get_prompts
-import asyncio
-from poisoned_rag_defense.models import create_model
-import tqdm.asyncio
-import json
 import argparse
+import asyncio
+import sys
+from pathlib import Path
+
+import pandas as pd
+import tqdm.asyncio
+
+main_dir_path = str(Path(__file__).parent.parent.parent)
+if main_dir_path not in sys.path:
+    sys.path.append(main_dir_path)
+
+from poisoned_rag_defense.models import create_model
+from poisoned_rag_defense.prompts.prompts import PROMPT_TEMPLATES, wrap_prompt
+from poisoned_rag_defense.utils import run_cot_query_with_reprompt
+from run.experiments.utils import (
+    load_experiment_config,
+    load_questions_context,
+    save_df,
+)
 
 
 def parse_args():
@@ -23,36 +35,14 @@ def parse_args():
 def main():
     args = parse_args()
 
-    EXPERIMENT_DIR = Path("./results/experiments")
+    experiment_config = load_experiment_config(args.experiment_name)
+    question_df, context_df = load_questions_context(args.experiment_name)
 
-    results_dir = EXPERIMENT_DIR / args.experiment_name
-
-    try:
-        with open(results_dir / "config.json", "r") as fd:
-            experiment_config = json.load(fd)
-    except FileNotFoundError as e:
-        raise Exception(
-            f"Unable to find config for experiment {args.experiment_name}. Have you run 'initialise_experiment_set.py' for that experiment?"
-        ) from e
-
-    try:
-        questions_df = pd.read_pickle(results_dir / "questions.p")
-        context_df = pd.read_pickle(results_dir / "context.p")
-    except FileNotFoundError as e:
-        raise Exception(
-            f"Unable to find question and context dfs for experiment {args.experiment_name}. Have you run 'run_retriever.py' for that experiment?"
-        ) from e
-
-    prompt_templates = {
-        prompt_type: get_prompts(prompt_type)
-        for prompt_type in ["original", "refined", "cot"]
-    }
-
-    def to_query_str(row, context_col, prompt_templates):
+    def to_query_str(row, context_col, prompt_type):
         if context_col is None:
-            return wrap_prompt(row["question"], None, prompt_templates)
+            return wrap_prompt(row["question"], None, prompt_type)
         else:
-            return wrap_prompt(row["question"], row[context_col], prompt_templates)
+            return wrap_prompt(row["question"], row[context_col], prompt_type)
 
     assert all(
         [
@@ -62,16 +52,16 @@ def main():
     ), "Unexpected context config"
     all_queries = pd.concat(
         {
-            (context, prompt_type): context_df.join(questions_df).apply(
-                to_query_str, args=(context, prompt_templates[prompt_type]), axis=1
+            (context, prompt_type): context_df.join(question_df).apply(
+                to_query_str, args=(context, prompt_type), axis=1
             )
             for context, prompt_type in experiment_config["experiments"]
         }
     )
 
     if experiment_config["do_no_context"]:
-        no_context_queries = questions_df.apply(
-            to_query_str, args=(None, prompt_templates["refined"]), axis=1
+        no_context_queries = question_df.apply(
+            to_query_str, args=(None, "refined"), axis=1
         )
 
         no_context_queries.index = pd.MultiIndex.from_tuples(
@@ -84,28 +74,21 @@ def main():
     llm = create_model(f"model_configs/{experiment_config['model']}_config.json")
 
     async def run_all_queries(iter_results):
+        """Run all of the queries in parallel"""
+
+        # Use a semaphore to limit concurrent queries
         sem = asyncio.Semaphore(10)
         print("Starting queries")
 
-        # prog = tqdm.tqdm(total = len(iter_results))
         async def run_query(prompt_type, query):
             ret = {}
             async with sem:
-                # tqdm.
-                response = await llm.aquery(query, 20)
-                ret["output"] = response
+                return (
+                    run_cot_query_with_reprompt(query, llm, 20)
+                    if prompt_type == "cot"
+                    else {"output": await llm.aquery(query, 20)}
+                )
 
-                if prompt_type == "cot" and "Answer:" not in response:
-                    ret["initial_output"] = response
-                    follow_up_prompt = query + response + "\nAnswer:"
-                    ret["follow_up_prompt"] = follow_up_prompt
-                    follow_up_response = await llm.aquery(follow_up_prompt)
-                    ret["output"] = follow_up_response
-                else:
-                    ret["output"] = response
-            return ret
-
-        # tqdm.asyncio.gather
         return await tqdm.asyncio.tqdm_asyncio.gather(
             *[
                 run_query(prompt_type, iter_result)
@@ -119,7 +102,7 @@ def main():
         asyncio.run(run_all_queries(all_queries)), index=all_queries.index
     )
 
-    results.to_pickle(results_dir / "llm_outputs.p")
+    save_df(results, args.experiment_name, "llm_outputs.p")
 
 
 if __name__ == "__main__":
