@@ -35,11 +35,16 @@ def main():
 
     config = {
         "dataset": dataset_split_string,
-        "retriever_configs": {"standard": [0.5, 5, 0.65]},
+        "retriever_configs": {
+            "standard": [
+                "openai",
+                {"n_contexts": 5, "accept_thresh": 0.5, "similarity_rej_thresh": 0.65},
+            ],
+        },
         "model": "gpt4",
         "experiments": [["standard", "cot"]],
         "do_no_context": True,
-        "n_question": None,
+        "n_questions": None,
     }
 
     experiment = Experiment(args.experiment_name)

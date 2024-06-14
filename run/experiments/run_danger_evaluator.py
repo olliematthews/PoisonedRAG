@@ -11,7 +11,7 @@ main_dir_path = str(Path(__file__).parent.parent.parent)
 if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
-from poisoned_rag_defense.danger_identification.danger_identification import (
+from poisoned_rag_defense.danger_evaluation.danger_evaluation import (
     identify_dangerous_async,
 )
 from poisoned_rag_defense.logger import logger

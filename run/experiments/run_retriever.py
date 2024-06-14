@@ -185,9 +185,10 @@ def main():
     experiment = Experiment(args.experiment_name)
 
     if (n_questions := experiment.config.get("n_questions")) is not None:
-        experiment.test_cases = experiment.test_cases[:n_questions]
-
-    question_df = pd.DataFrame(experiment.test_cases)
+        test_cases = experiment.test_cases[:n_questions]
+    else:
+        test_cases = experiment.test_cases
+    question_df = pd.DataFrame(test_cases)
     question_df.set_index("qid", inplace=True)
 
     experiment.save_df(question_df, "questions")
