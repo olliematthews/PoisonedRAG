@@ -1,10 +1,12 @@
-from sentence_transformers import SentenceTransformer
-import torch
-import random
-from tqdm import tqdm
-from poisoned_rag_defense.utils import load_json
 import json
 import os
+import random
+
+import torch
+from sentence_transformers import SentenceTransformer
+from tqdm import tqdm
+
+from poisoned_rag_defense.utils import load_json
 
 
 class GradientStorage:
@@ -24,7 +26,7 @@ class GradientStorage:
         return self._stored_gradient
 
 
-def get_embeddings(model):
+def get_openai_embeddings(model):
     """Returns the wordpiece embedding module."""
     # base_model = getattr(model, config.model_type)
     # embeddings = base_model.embeddings.word_embeddings
@@ -130,7 +132,7 @@ class Attacker:
                 else:  # init adv passage using [MASK]
                     adv_a = [self.tokenizer.mask_token_id] * self.num_adv_passage_tokens
 
-                embeddings = get_embeddings(self.c_model)
+                embeddings = get_openai_embeddings(self.c_model)
                 embedding_gradient = GradientStorage(embeddings)
 
                 adv_passage = adv_a + adv_b  # token ids

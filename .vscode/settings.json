@@ -3,5 +3,9 @@
         "editor.defaultFormatter": "ms-python.black-formatter",
         "editor.formatOnSave": true,
         "files.trimTrailingWhitespace": true,
+        "editor.codeActionsOnSave": {
+            "source.organizeImports": "always"
+        }
+
     }
 }

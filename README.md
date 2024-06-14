@@ -236,7 +236,7 @@ The code is set up to run configurable experiments. First you must run the "run/
 ##### Initial setup - must be done once for each dataset 
 
 * Create cached files for a given dataset (default is nq):
-  * Run `python run/setup/generate_datasets.py` (for available options use `--help`)
+  * Run `python run/setup/generate_poisonedrag_cache.py` (for available options use `--help`)
     * This will create and cache datasets to be used in this repo from the PoinsonedRAG code
   * Run `python run/setup/generate_openai_embeddings.py`
     * This will generate the openai embeddings for the dataset and cache them

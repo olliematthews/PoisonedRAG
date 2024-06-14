@@ -1,36 +1,31 @@
-import json
+import argparse
+import sys
 from pathlib import Path
 
-import pandas as pd
+main_dir_path = str(Path(__file__).parent.parent.parent)
+if main_dir_path not in sys.path:
+    sys.path.append(main_dir_path)
 
-EXPERIMENT_DIR = Path("./results/experiments")
-
-### FOR SAVING / LOADING RESULTS
-
-
-def load_experiment_config(experiment_name: str) -> dict[str, any]:
-    results_dir = EXPERIMENT_DIR / experiment_name
-    try:
-        with open(results_dir / "config.json", "r") as fd:
-            return json.load(fd)
-    except FileNotFoundError as e:
-        raise Exception(
-            f"Unable to find config for experiment {experiment_name}. Have you run 'initialise_experiment_set.py' for that experiment?"
-        ) from e
+from poisoned_rag_defense.logger import logger
 
 
-def load_questions_context(experiment_name: str) -> tuple[pd.DataFrame]:
-    results_dir = EXPERIMENT_DIR / experiment_name
-    try:
-        question_df = pd.read_pickle(results_dir / "questions.p")
-        context_df = pd.read_pickle(results_dir / "context.p")
-        return question_df, context_df
-    except FileNotFoundError as e:
-        raise Exception(
-            f"Unable to find question and context dfs for experiment {experiment_name}. Have you run 'run_retriever.py' for that experiment?"
-        ) from e
+def experiment_name_parse_args():
+    parser = argparse.ArgumentParser("Run experiment step")
+
+    parser.add_argument("--experiment_name", type=str, required=True)
+
+    args = parser.parse_args()
+    logger.debug(str(args))
+
+    return args
 
 
-def save_df(df: pd.DataFrame, experiment_name: str, save_name: str):
-    results_dir = EXPERIMENT_DIR / experiment_name
-    df.to_pickle(results_dir / save_name)
+def experiment_name__parse_args():
+    parser = argparse.ArgumentParser("Run experiment step")
+
+    parser.add_argument("--experiment_name", type=str, required=True)
+
+    args = parser.parse_args()
+    print(args)
+
+    return args

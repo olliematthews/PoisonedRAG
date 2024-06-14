@@ -14,16 +14,13 @@ if main_dir_path not in sys.path:
 from poisoned_rag_defense.danger_identification.danger_identification import (
     identify_dangerous_async,
 )
+from poisoned_rag_defense.logger import logger
 from poisoned_rag_defense.models import create_model
-from run.experiments.utils import (
-    load_experiment_config,
-    load_questions_context,
-    save_df,
-)
+from run.experiments.experiment import Experiment
 
 
 def parse_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("Run experiment step")
 
     # Retriever and BEIR datasets
     parser.add_argument("--experiment_name", type=str, required=True)
@@ -34,7 +31,7 @@ def parse_args():
     )
 
     args = parser.parse_args()
-    print(args)
+    logger.debug(str(args))
 
     return args
 
@@ -42,26 +39,24 @@ def parse_args():
 def main():
     args = parse_args()
 
-    combined = args.combined
+    experiment = Experiment(args.experiment_name)
 
-    experiment_config = load_experiment_config(args.experiment_name)
-    question_df, context_df = load_questions_context(args.experiment_name)
-
+    # Flatten out the contexts to run through the llm
     contexts_expanded = pd.concat(
-        {column: context_df[column] for column in context_df.columns}
+        {
+            column: experiment.context_df[column]
+            for column in experiment.context_df.columns
+        }
     )
     contexts_expanded.index.names = ["Context type", "qid"]
-
     query_df = pd.DataFrame(contexts_expanded.rename("contexts"))
-    query_df["question"] = question_df.loc[
+    query_df["question"] = experiment.question_df.loc[
         contexts_expanded.index.get_level_values("qid")
     ]["question"].to_list()
 
-    llm = create_model(f"model_configs/{experiment_config['model']}_config.json")
-
     async def run_all_queries(query_df, llm, use_combined):
         sem = asyncio.Semaphore(10)
-        print("Starting queries")
+        logger.info("Starting danger evaluation")
 
         async def run_query(row):
             async with sem:
@@ -73,14 +68,14 @@ def main():
             *[run_query(row) for _, row in query_df.iterrows()]
         )
 
+    llm = create_model(f"model_configs/{experiment.config['model']}_config.json")
+
     results = pd.DataFrame(
-        asyncio.run(run_all_queries(query_df, llm, combined)),
+        asyncio.run(run_all_queries(query_df, llm, args.combined)),
         index=contexts_expanded.index,
     )
 
-    save_df(
-        results, args.experiment_name, f"danger_eval_p{'comb' if combined else 'sep'}.p"
-    )
+    experiment.save_df(results, f"danger_eval_p{'comb' if args.combined else 'sep'}")
 
 
 if __name__ == "__main__":

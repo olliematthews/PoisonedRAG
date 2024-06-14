@@ -2,20 +2,22 @@
 
 import argparse
 import json
+import sys
 from pathlib import Path
+
+main_dir_path = str(Path(__file__).parent.parent.parent)
+if main_dir_path not in sys.path:
+    sys.path.append(main_dir_path)
+
+from poisoned_rag_defense.logger import logger
+from run.experiments.experiment import Experiment
 
 
 def parse_args():
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser("Initialise experiment")
 
     # Retriever and BEIR datasets
     parser.add_argument("--experiment_name", type=str, required=True)
-    parser.add_argument(
-        "--model",
-        type=str,
-        help="GPT model to use - can be gpt3.5 or gpt4",
-        required=True,
-    )
     parser.add_argument(
         "--eval_dataset", type=str, default="nq", help="BEIR dataset to evaluate"
     )
@@ -29,23 +31,26 @@ def parse_args():
 
 def main():
     args = parse_args()
-
-    EXPERIMENT_DIR = Path("./results/experiments")
-    results_dir = EXPERIMENT_DIR / args.experiment_name
-    results_dir.mkdir(exist_ok=True, parents=True)
     dataset_split_string = f"{args.eval_dataset}-{args.split}"
 
     config = {
         "dataset": dataset_split_string,
         "retriever_configs": {"standard": [0.5, 5, 0.65]},
-        "model": args.model,
+        "model": "gpt4",
         "experiments": [["standard", "cot"]],
         "do_no_context": True,
         "n_question": None,
     }
 
-    with open(results_dir / "config.json", "w") as fd:
-        json.dump(config, fd, indent=2)
+    experiment = Experiment(args.experiment_name)
+
+    experiment.save_config(config)
+    logger.info(
+        f"Saved default config for experiment {args.experiment_name}: {json.dumps(config, indent=2)}"
+    )
+    logger.info(
+        f"Please edit the config at {experiment.results_dir / 'config.json'} as desired"
+    )
 
 
 if __name__ == "__main__":

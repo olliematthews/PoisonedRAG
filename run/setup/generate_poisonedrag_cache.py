@@ -15,6 +15,7 @@ if main_dir_path not in sys.path:
     sys.path.append(main_dir_path)
 
 from poisoned_rag_defense.attack import Attacker
+from poisoned_rag_defense.logger import logger
 from poisoned_rag_defense.utils import (
     load_beir_datasets,
     load_json,
@@ -57,7 +58,7 @@ def parse_args():
     parser.add_argument("--seed", type=int, default=12, help="Random seed")
 
     args = parser.parse_args()
-    print(args)
+    logger.debug(str(args))
     return args
 
 
@@ -75,6 +76,7 @@ def main():
             corpus, _, qrels = load_beir_datasets(args.eval_dataset, args.split)
         with open(cache_file, "wb") as fd:
             pickle.dump((corpus, qrels), fd)
+        logger.info(f"Saving beir cache to {cache_file}")
     else:
         with open(cache_file, "rb") as fd:
             corpus, qrels = pickle.load(fd)
@@ -86,11 +88,11 @@ def main():
 
     # load BEIR top_k results
     if args.orig_beir_results is None:
-        print(
+        logger.info(
             f"Please evaluate on BEIR first -- {args.eval_model_code} on {args.eval_dataset}"
         )
         # Try to get beir eval results from ./beir_results
-        print("Now try to get beir eval results from results/beir_results/...")
+        logger.info("Now try to get beir eval results from results/beir_results/...")
         if args.split == "test":
             args.orig_beir_results = (
                 f"results/beir_results/{args.eval_dataset}-{args.eval_model_code}.json"
@@ -102,11 +104,11 @@ def main():
         assert os.path.exists(
             args.orig_beir_results
         ), f"Failed to get beir_results from {args.orig_beir_results}!"
-        print(f"Automatically get beir_results from {args.orig_beir_results}.")
+        logger.info(f"Automatically get beir_results from {args.orig_beir_results}.")
     with open(args.orig_beir_results, "r") as f:
         results = json.load(f)
-    # assert len(qrels) <= len(results)
-    print("Total samples:", len(results))
+
+    logger.info("Total samples:", len(results))
 
     # Load retrieval models
     model, c_model, tokenizer, get_emb = load_models(args.eval_model_code)
@@ -188,10 +190,10 @@ def main():
         relevant_corpus.update({k: corpus[k] for k in results[question_info["id"]]})
         relevant_corpus.update({k: corpus[k] for k in gt_ids})
 
-    with open(
-        CACHE_DIR / f"poisonedrag_cache-{args.eval_dataset}-{args.split}.p", "wb"
-    ) as fd:
+    save_path = CACHE_DIR / f"poisonedrag_cache-{args.eval_dataset}-{args.split}.p"
+    with open(save_path, "wb") as fd:
         pickle.dump((test_cases, relevant_corpus), fd)
+    logger.info(f"Saved poisonrag test cases and corpus to {save_path}")
 
 
 if __name__ == "__main__":
